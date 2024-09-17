@@ -8,6 +8,7 @@ fn main() {
         .add_startup_system(setup)
         .add_system(ship_movement)
         .add_system(ship_rotation)
+        .add_system(box_movement) // Add the box_movement system
         .run();
 }
 
@@ -20,6 +21,14 @@ struct Ship;
 struct StartPoint;
 #[derive(Component)]
 struct EndPoint;
+
+// Component to identify the box entities
+#[derive(Component)]
+struct BoxEntity;
+
+// Component to store the direction of the box movement
+#[derive(Component)]
+struct BoxDirection(Vec3);
 
 fn setup(
     mut commands: Commands,
@@ -88,12 +97,19 @@ fn setup(
             Ship, // Add the Ship component to identify this entity
         ));
 
-        // Spawn 10 boxes at random positions
-        let num_boxes = 10;
+        // Spawn 5 boxes at random positions
+        let num_boxes = 5;
         let mut rng = rand::thread_rng(); // Create a random number generator
         for _ in 0..num_boxes {
             let x = rng.gen_range(-half_width + margin..half_width - margin);
             let y = rng.gen_range(-half_height + margin..half_height - margin);
+
+            // Random initial direction
+            let direction = Vec3::new(
+                rng.gen_range(-1.0..1.0),
+                rng.gen_range(-1.0..1.0),
+                0.0,
+            ).normalize_or_zero();
 
             commands.spawn(( 
                 SpriteBundle {
@@ -105,7 +121,8 @@ fn setup(
                     },
                     ..Default::default()
                 },
-                // Optionally add a Box component if needed
+                BoxEntity, // Add the BoxEntity component to identify the box
+                BoxDirection(direction), // Assign initial movement direction
             ));
         }
     }
@@ -183,6 +200,26 @@ fn ship_rotation(
                     transform.rotation = Quat::from_rotation_z(angle);
                 }
             }
+        }
+    }
+}
+
+// System to handle box movement
+fn box_movement(
+    time: Res<Time>,
+    mut query: Query<(&mut Transform, &mut BoxDirection), With<BoxEntity>>,
+) {
+    for (mut transform, mut direction) in query.iter_mut() {
+        let speed = 50.0; // Reduced speed for smoother movement
+        let movement = Vec3::new(speed * time.delta_seconds(), speed * time.delta_seconds(), 0.0);
+
+        // Move the box in the current direction
+        transform.translation += direction.0 * movement;
+
+        // Optionally, handle boundary collisions or change direction randomly
+        if transform.translation.x.abs() > 400.0 || transform.translation.y.abs() > 300.0 {
+            // Reverse direction when hitting boundaries (example values)
+            direction.0 *= -1.0;
         }
     }
 }
