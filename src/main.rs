@@ -33,6 +33,7 @@ fn setup(
 
     // Get the primary window
     if let Ok(window) = windows.get_single() {
+        let margin = 20.0; // Define a margin from the window edges
         let half_width = window.width() / 2.0;
         let half_height = window.height() / 2.0;
 
@@ -44,7 +45,7 @@ fn setup(
                     ..Default::default()
                 },
                 transform: Transform {
-                    translation: Vec3::new(-half_width + 60.0, half_height - 60.0, 0.0), // Top-left corner with a margin
+                    translation: Vec3::new(-half_width + margin, half_height - margin, 0.0), // Top-left corner with margin
                     scale: Vec3::new(20.0, 20.0, 1.0), // Larger size for the start point visual
                     ..Default::default()
                 },
@@ -61,7 +62,7 @@ fn setup(
                     ..Default::default()
                 },
                 transform: Transform {
-                    translation: Vec3::new(half_width - 60.0, -half_height + 60.0, 0.0), // Bottom-right corner with a margin
+                    translation: Vec3::new(half_width - margin, -half_height + margin, 0.0), // Bottom-right corner with margin
                     scale: Vec3::new(20.0, 20.0, 1.0), // Larger size for the end point visual
                     ..Default::default()
                 },
@@ -75,7 +76,7 @@ fn setup(
             SpriteBundle {
                 texture: ship_handle,
                 transform: Transform {
-                    translation: Vec3::new(-half_width + 100.0, half_height - 60.0, 0.0), // Right side of the top-left corner
+                    translation: Vec3::new(-half_width + margin + 40.0, half_height - margin - 40.0, 0.0), // Right side of the top-left corner
                     scale: Vec3::new(0.1, 0.1, 1.0), // Smaller size for the ship
                     rotation: Quat::from_rotation_z(0.0), // Initial rotation
                     ..Default::default()
@@ -86,6 +87,8 @@ fn setup(
         ));
     }
 }
+
+
 
 // System to handle ship movement based on keyboard input
 fn ship_movement(
