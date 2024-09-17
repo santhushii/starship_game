@@ -36,21 +36,6 @@ fn setup(
         let half_width = window.width() / 2.0;
         let half_height = window.height() / 2.0;
 
-        // Spawn the ship at the top-left corner of the screen
-        commands.spawn((
-            SpriteBundle {
-                texture: ship_handle,
-                transform: Transform {
-                    translation: Vec3::new(-half_width + 50.0, half_height - 50.0, 0.0), // Top-left corner with a margin
-                    scale: Vec3::new(0.1, 0.1, 1.0), // Smaller size for the ship
-                    rotation: Quat::from_rotation_z(0.0), // Initial rotation
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            Ship, // Add the Ship component to identify this entity
-        ));
-
         // Spawn the start point visual (e.g., a green square)
         commands.spawn((
             SpriteBundle {
@@ -84,6 +69,21 @@ fn setup(
             },
             EndPoint,
         ));
+
+        // Spawn the ship near the start point (right side)
+        commands.spawn((
+            SpriteBundle {
+                texture: ship_handle,
+                transform: Transform {
+                    translation: Vec3::new(-half_width + 100.0, half_height - 60.0, 0.0), // Right side of the top-left corner
+                    scale: Vec3::new(0.1, 0.1, 1.0), // Smaller size for the ship
+                    rotation: Quat::from_rotation_z(0.0), // Initial rotation
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            Ship, // Add the Ship component to identify this entity
+        ));
     }
 }
 
@@ -92,6 +92,7 @@ fn ship_movement(
     keyboard_input: Res<Input<KeyCode>>,
     mut query: Query<&mut Transform, With<Ship>>,
     time: Res<Time>,
+    windows: Query<&Window, With<PrimaryWindow>>,
 ) {
     if let Ok(mut transform) = query.get_single_mut() {
         let mut direction = Vec3::ZERO;
@@ -113,8 +114,25 @@ fn ship_movement(
         // Adjust the ship's position based on the input
         let speed = 200.0;
         transform.translation += direction.normalize_or_zero() * speed * time.delta_seconds();
+
+        // Get window size for boundary clamping
+        if let Ok(window) = windows.get_single() {
+            let half_width = window.width() / 2.0;
+            let half_height = window.height() / 2.0;
+
+            // Define the margin boundaries
+            let min_x = -half_width + 60.0; // Start point margin (left side)
+            let max_x = half_width - 60.0;  // End point margin (right side)
+            let min_y = -half_height + 60.0; // End point margin (bottom side)
+            let max_y = half_height - 60.0;  // Start point margin (top side)
+
+            // Clamp the ship's position to stay within the defined boundaries
+            transform.translation.x = transform.translation.x.clamp(min_x, max_x);
+            transform.translation.y = transform.translation.y.clamp(min_y, max_y);
+        }
     }
 }
+
 
 // System to handle ship rotation based on mouse click
 fn ship_rotation(
