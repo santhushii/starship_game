@@ -3,12 +3,10 @@ use bevy::window::PrimaryWindow;
 
 fn main() {
     App::new()
-        // Add the default plugins (window, rendering, etc.)
         .add_plugins(DefaultPlugins)
-        // Run our custom setup system on startup
         .add_startup_system(setup)
-        // Add a system for handling keyboard input and moving the ship
         .add_system(ship_movement)
+        .add_system(ship_rotation)
         .run();
 }
 
@@ -40,6 +38,7 @@ fn setup(
                 transform: Transform {
                     translation: Vec3::new(-half_width + 50.0, half_height - 50.0, 0.0), // Top-left corner with a margin
                     scale: Vec3::new(0.2, 0.2, 1.0), // Smaller scale for the ship
+                    rotation: Quat::from_rotation_z(0.0), // Initial rotation
                     ..Default::default()
                 },
                 ..Default::default()
@@ -53,6 +52,7 @@ fn setup(
 fn ship_movement(
     keyboard_input: Res<Input<KeyCode>>,
     mut query: Query<&mut Transform, With<Ship>>, // Query the transform of the ship
+    time: Res<Time>, // Time resource for smooth movement
 ) {
     if let Ok(mut transform) = query.get_single_mut() {
         let mut direction = Vec3::ZERO;
@@ -73,9 +73,36 @@ fn ship_movement(
 
         // Adjust the ship's position based on the input
         let speed = 200.0; // Movement speed (adjust as necessary)
-        transform.translation += direction.normalize_or_zero() * speed * TIME_STEP;
+        transform.translation += direction.normalize_or_zero() * speed * time.delta_seconds();
     }
 }
 
-// Constant for time step to control movement speed per frame
-const TIME_STEP: f32 = 1.0 / 60.0;
+// System to handle ship rotation based on mouse click
+fn ship_rotation(
+    mut mouse_button_input: Res<Input<MouseButton>>,
+    mut query: Query<&mut Transform, With<Ship>>, // Query the transform of the ship
+    windows: Query<&Window, With<PrimaryWindow>>,
+) {
+    if mouse_button_input.just_pressed(MouseButton::Left) {
+        if let Ok(window) = windows.get_single() {
+            if let Some(mouse_pos) = window.cursor_position() {
+                if let Ok(mut transform) = query.get_single_mut() {
+                    // Convert the mouse position to world coordinates
+                    let window_size = Vec2::new(window.width(), window.height());
+                    let mouse_world_pos = Vec3::new(
+                        (mouse_pos.x - window_size.x / 2.0) / (window_size.x / 2.0),
+                        (mouse_pos.y - window_size.y / 2.0) / (window_size.y / 2.0),
+                        0.0,
+                    );
+
+                    // Calculate the direction vector and angle to rotate
+                    let direction = (mouse_world_pos - transform.translation).truncate();
+                    let angle = direction.y.atan2(direction.x);
+
+                    // Update the ship's rotation
+                    transform.rotation = Quat::from_rotation_z(angle);
+                }
+            }
+        }
+    }
+}
