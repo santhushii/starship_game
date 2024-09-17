@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
+use rand::Rng; // Import the rand crate for random number generation
 
 fn main() {
     App::new()
@@ -28,8 +29,9 @@ fn setup(
     // Spawn the camera
     commands.spawn(Camera2dBundle::default());
 
-    // Load the ship texture (make sure "assets/ship.png" exists)
+    // Load the ship and box textures
     let ship_handle = asset_server.load("ship.png");
+    let box_handle = asset_server.load("box.png");
 
     // Get the primary window
     if let Ok(window) = windows.get_single() {
@@ -38,7 +40,7 @@ fn setup(
         let half_height = window.height() / 2.0;
 
         // Spawn the start point visual (e.g., a green square)
-        commands.spawn((
+        commands.spawn(( 
             SpriteBundle {
                 sprite: Sprite {
                     color: Color::GREEN,
@@ -55,7 +57,7 @@ fn setup(
         ));
 
         // Spawn the end point visual (e.g., a red square)
-        commands.spawn((
+        commands.spawn(( 
             SpriteBundle {
                 sprite: Sprite {
                     color: Color::RED,
@@ -72,7 +74,7 @@ fn setup(
         ));
 
         // Spawn the ship near the start point (right side)
-        commands.spawn((
+        commands.spawn(( 
             SpriteBundle {
                 texture: ship_handle,
                 transform: Transform {
@@ -85,10 +87,29 @@ fn setup(
             },
             Ship, // Add the Ship component to identify this entity
         ));
+
+        // Spawn 10 boxes at random positions
+        let num_boxes = 10;
+        let mut rng = rand::thread_rng(); // Create a random number generator
+        for _ in 0..num_boxes {
+            let x = rng.gen_range(-half_width + margin..half_width - margin);
+            let y = rng.gen_range(-half_height + margin..half_height - margin);
+
+            commands.spawn(( 
+                SpriteBundle {
+                    texture: box_handle.clone(),
+                    transform: Transform {
+                        translation: Vec3::new(x, y, 0.0),
+                        scale: Vec3::new(0.1, 0.1, 1.0), // Adjust size as needed
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                // Optionally add a Box component if needed
+            ));
+        }
     }
 }
-
-
 
 // System to handle ship movement based on keyboard input
 fn ship_movement(
@@ -135,7 +156,6 @@ fn ship_movement(
         }
     }
 }
-
 
 // System to handle ship rotation based on mouse click
 fn ship_rotation(
