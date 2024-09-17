@@ -100,7 +100,7 @@ fn setup(
                     texture: box_handle.clone(),
                     transform: Transform {
                         translation: Vec3::new(x, y, 0.0),
-                        scale: Vec3::new(0.1, 0.1, 1.0), // Adjust size as needed
+                        scale: Vec3::new(0.2, 0.2, 2.0), // Adjust size as needed
                         ..Default::default()
                     },
                     ..Default::default()
