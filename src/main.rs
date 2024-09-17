@@ -14,11 +14,16 @@ fn main() {
 #[derive(Component)]
 struct Ship;
 
-// The setup system that runs when the app starts
+// Component to identify start and end points
+#[derive(Component)]
+struct StartPoint;
+#[derive(Component)]
+struct EndPoint;
+
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    windows: Query<&Window, With<PrimaryWindow>>, // Query the primary window
+    windows: Query<&Window, With<PrimaryWindow>>,
 ) {
     // Spawn the camera
     commands.spawn(Camera2dBundle::default());
@@ -37,7 +42,7 @@ fn setup(
                 texture: ship_handle,
                 transform: Transform {
                     translation: Vec3::new(-half_width + 50.0, half_height - 50.0, 0.0), // Top-left corner with a margin
-                    scale: Vec3::new(0.2, 0.2, 1.0), // Smaller scale for the ship
+                    scale: Vec3::new(0.1, 0.1, 1.0), // Smaller size for the ship
                     rotation: Quat::from_rotation_z(0.0), // Initial rotation
                     ..Default::default()
                 },
@@ -45,14 +50,48 @@ fn setup(
             },
             Ship, // Add the Ship component to identify this entity
         ));
+
+        // Spawn the start point visual (e.g., a green square)
+        commands.spawn((
+            SpriteBundle {
+                sprite: Sprite {
+                    color: Color::GREEN,
+                    ..Default::default()
+                },
+                transform: Transform {
+                    translation: Vec3::new(-half_width + 60.0, half_height - 60.0, 0.0), // Top-left corner with a margin
+                    scale: Vec3::new(20.0, 20.0, 1.0), // Larger size for the start point visual
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            StartPoint,
+        ));
+
+        // Spawn the end point visual (e.g., a red square)
+        commands.spawn((
+            SpriteBundle {
+                sprite: Sprite {
+                    color: Color::RED,
+                    ..Default::default()
+                },
+                transform: Transform {
+                    translation: Vec3::new(half_width - 60.0, -half_height + 60.0, 0.0), // Bottom-right corner with a margin
+                    scale: Vec3::new(20.0, 20.0, 1.0), // Larger size for the end point visual
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            EndPoint,
+        ));
     }
 }
 
 // System to handle ship movement based on keyboard input
 fn ship_movement(
     keyboard_input: Res<Input<KeyCode>>,
-    mut query: Query<&mut Transform, With<Ship>>, // Query the transform of the ship
-    time: Res<Time>, // Time resource for smooth movement
+    mut query: Query<&mut Transform, With<Ship>>,
+    time: Res<Time>,
 ) {
     if let Ok(mut transform) = query.get_single_mut() {
         let mut direction = Vec3::ZERO;
@@ -72,7 +111,7 @@ fn ship_movement(
         }
 
         // Adjust the ship's position based on the input
-        let speed = 200.0; // Movement speed (adjust as necessary)
+        let speed = 200.0;
         transform.translation += direction.normalize_or_zero() * speed * time.delta_seconds();
     }
 }
@@ -80,7 +119,7 @@ fn ship_movement(
 // System to handle ship rotation based on mouse click
 fn ship_rotation(
     mut mouse_button_input: Res<Input<MouseButton>>,
-    mut query: Query<&mut Transform, With<Ship>>, // Query the transform of the ship
+    mut query: Query<&mut Transform, With<Ship>>,
     windows: Query<&Window, With<PrimaryWindow>>,
 ) {
     if mouse_button_input.just_pressed(MouseButton::Left) {
