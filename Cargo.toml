@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = "0.10"
-rand = "0.8"  # Or the latest version
+bevy = "0.10"  # Adjust the version as needed
+rand = "0.8"   # Adjust the version as needed

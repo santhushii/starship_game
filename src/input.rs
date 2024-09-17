@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use crate::component::Ship;
+use crate::component::{Ship, Fireball};
 
 pub fn ship_movement(
     keyboard_input: Res<Input<KeyCode>>,
@@ -48,7 +48,7 @@ pub fn ship_movement(
 }
 
 pub fn ship_rotation(
-    mut mouse_button_input: Res<Input<MouseButton>>,
+    mouse_button_input: Res<Input<MouseButton>>,
     mut query: Query<&mut Transform, With<Ship>>,
     windows: Query<&Window, With<PrimaryWindow>>,
 ) {
@@ -72,6 +72,32 @@ pub fn ship_rotation(
                     transform.rotation = Quat::from_rotation_z(angle);
                 }
             }
+        }
+    }
+}
+
+pub fn spawn_fireball(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    query: Query<&Transform, With<Ship>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::Space) {
+        if let Ok(ship_transform) = query.get_single() {
+            let fireball_texture = asset_server.load("fireball.png"); // Make sure you have a fireball texture
+
+            commands.spawn((
+                SpriteBundle {
+                    texture: fireball_texture,
+                    transform: Transform {
+                        translation: ship_transform.translation,
+                        scale: Vec3::new(0.1, 0.1, 1.0),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                Fireball,
+            ));
         }
     }
 }

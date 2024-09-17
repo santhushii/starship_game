@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use rand::Rng;
-use crate::component::{BoxEntity, BoxDirection, Ship, StartPoint, EndPoint};
+use crate::component::{BoxEntity, BoxDirection, Ship, StartPoint, EndPoint, Fireball};
 
 pub fn setup(
     mut commands: Commands,
@@ -89,7 +89,7 @@ pub fn setup(
                     texture: box_handle.clone(),
                     transform: Transform {
                         translation: Vec3::new(x, y, 0.0),
-                        scale: Vec3::new(0.2, 0.2, 2.0), // Adjust size as needed
+                        scale: Vec3::new(0.2, 0.2, 1.0), // Adjust size as needed
                         ..Default::default()
                     },
                     ..Default::default()
@@ -113,9 +113,24 @@ pub fn box_movement(
         transform.translation += direction.0 * movement;
 
         // Optionally, handle boundary collisions or change direction randomly
-        if transform.translation.x.abs() > 400.0 || transform.translation.y.abs() > 300.0 {
-            // Reverse direction when hitting boundaries (example values)
+        let half_width = 400.0; // Adjust this based on your window size or requirements
+        let half_height = 300.0; // Adjust this based on your window size or requirements
+        
+        if transform.translation.x.abs() > half_width || transform.translation.y.abs() > half_height {
+            // Reverse direction when hitting boundaries
             direction.0 *= -1.0;
         }
+    }
+}
+
+pub fn fireball_movement(
+    time: Res<Time>,
+    mut query: Query<(&mut Transform, &Fireball)>,
+) {
+    for (mut transform, _) in query.iter_mut() {
+        let speed = 300.0;
+        transform.translation += Vec3::new(speed * time.delta_seconds(), 0.0, 0.0);
+        
+        // Optionally, you can add logic to remove fireballs when they go off-screen or hit an object
     }
 }
