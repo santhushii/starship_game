@@ -7,10 +7,10 @@ mod input;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_startup_system(system::setup)
-        .add_system(input::ship_movement)
-        .add_system(input::ship_rotation)
-        .add_system(system::box_movement)
-        .add_system(input::spawn_fireball)
+        .insert_resource(component::ExplosionTimer(None)) // Add explosion timer resource
+        .add_startup_system(system::setup) // No need for .system()
+        .add_system(input::ship_movement) // No need for .system()
+        .add_system(input::detect_collision_and_explode) // No need for .system()
+        .add_system(input::fireball_despawn) // No need for .system()
         .run();
 }

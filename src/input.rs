@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use crate::component::{Ship, Fireball, BoxEntity};
+use crate::component::{Ship, Fireball, BoxEntity, ExplosionTimer};
 
+// Ship movement function, moves the ship based on keyboard input
 pub fn ship_movement(
     keyboard_input: Res<Input<KeyCode>>,
     mut query: Query<&mut Transform, With<Ship>>,
@@ -47,47 +48,21 @@ pub fn ship_movement(
     }
 }
 
-pub fn ship_rotation(
-    mouse_button_input: Res<Input<MouseButton>>,
-    mut query: Query<&mut Transform, With<Ship>>,
-    windows: Query<&Window, With<PrimaryWindow>>,
-) {
-    if mouse_button_input.just_pressed(MouseButton::Left) {
-        if let Ok(window) = windows.get_single() {
-            if let Some(mouse_pos) = window.cursor_position() {
-                if let Ok(mut transform) = query.get_single_mut() {
-                    let window_size = Vec2::new(window.width(), window.height());
-                    let mouse_world_pos = Vec3::new(
-                        (mouse_pos.x - window_size.x / 2.0) / (window_size.x / 2.0),
-                        (mouse_pos.y - window_size.y / 2.0) / (window_size.y / 2.0),
-                        0.0,
-                    );
-
-                    let direction = (mouse_world_pos - transform.translation).truncate();
-                    let angle = direction.y.atan2(direction.x);
-
-                    transform.rotation = Quat::from_rotation_z(angle);
-                }
-            }
-        }
-    }
-}
-
-pub fn spawn_fireball(
+// Function to detect collisions between the ship and boxes and trigger explosion
+pub fn detect_collision_and_explode(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    ship_query: Query<&Transform, With<Ship>>,
+    mut ship_query: Query<(Entity, &Transform), With<Ship>>,
     box_query: Query<&Transform, With<BoxEntity>>,
+    time: Res<Time>,
+    mut timer: ResMut<ExplosionTimer>,
 ) {
-    for ship_transform in ship_query.iter() {
+    if let Ok((ship_entity, ship_transform)) = ship_query.get_single_mut() {
         for box_transform in box_query.iter() {
             let collision_distance = 30.0;
-            if ship_transform
-                .translation
-                .distance(box_transform.translation) < collision_distance
-            {
+            if ship_transform.translation.distance(box_transform.translation) < collision_distance {
+                // Spawn fireball on collision
                 let fireball_texture = asset_server.load("explo_a_sheet.png");
-
                 commands.spawn((
                     SpriteBundle {
                         texture: fireball_texture,
@@ -100,7 +75,32 @@ pub fn spawn_fireball(
                     },
                     Fireball,
                 ));
+
+                // Start the explosion timer
+                timer.0 = Some(0.5); // Fireball lasts 0.5 seconds
+
+                // Remove the ship entity (simulate explosion)
+                commands.entity(ship_entity).despawn();
             }
+        }
+    }
+}
+
+// Function to despawn the fireball after a short time
+pub fn fireball_despawn(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &Fireball)>,
+    mut timer: ResMut<ExplosionTimer>,
+) {
+    if let Some(time_left) = &mut timer.0 {
+        *time_left -= time.delta_seconds();
+        if *time_left <= 0.0 {
+            for (entity, _) in query.iter_mut() {
+                // Despawn the fireball after timer runs out
+                commands.entity(entity).despawn();
+            }
+            timer.0 = None; // Reset the timer
         }
     }
 }

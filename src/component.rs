@@ -23,3 +23,7 @@ pub struct StartPoint;
 // EndPoint component to represent the end point in the game
 #[derive(Component)]
 pub struct EndPoint;
+
+// Resource to manage fireball's explosion duration
+#[derive(Resource)]
+pub struct ExplosionTimer(pub Option<f32>);
