@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use crate::component::{Ship, Fireball};
+use crate::component::{Ship, Fireball, BoxEntity};
 
 pub fn ship_movement(
     keyboard_input: Res<Input<KeyCode>>,
@@ -35,10 +35,10 @@ pub fn ship_movement(
             let half_height = window.height() / 2.0;
 
             // Define the margin boundaries
-            let min_x = -half_width + 60.0; // Start point margin (left side)
-            let max_x = half_width - 60.0;  // End point margin (right side)
-            let min_y = -half_height + 60.0; // End point margin (bottom side)
-            let max_y = half_height - 60.0;  // Start point margin (top side)
+            let min_x = -half_width + 60.0;
+            let max_x = half_width - 60.0;
+            let min_y = -half_height + 60.0;
+            let max_y = half_height - 60.0;
 
             // Clamp the ship's position to stay within the defined boundaries
             transform.translation.x = transform.translation.x.clamp(min_x, max_x);
@@ -56,7 +56,6 @@ pub fn ship_rotation(
         if let Ok(window) = windows.get_single() {
             if let Some(mouse_pos) = window.cursor_position() {
                 if let Ok(mut transform) = query.get_single_mut() {
-                    // Convert the mouse position to world coordinates
                     let window_size = Vec2::new(window.width(), window.height());
                     let mouse_world_pos = Vec3::new(
                         (mouse_pos.x - window_size.x / 2.0) / (window_size.x / 2.0),
@@ -64,11 +63,9 @@ pub fn ship_rotation(
                         0.0,
                     );
 
-                    // Calculate the direction vector and angle to rotate
                     let direction = (mouse_world_pos - transform.translation).truncate();
                     let angle = direction.y.atan2(direction.x);
 
-                    // Update the ship's rotation
                     transform.rotation = Quat::from_rotation_z(angle);
                 }
             }
@@ -77,27 +74,33 @@ pub fn ship_rotation(
 }
 
 pub fn spawn_fireball(
-    keyboard_input: Res<Input<KeyCode>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    query: Query<&Transform, With<Ship>>,
+    ship_query: Query<&Transform, With<Ship>>,
+    box_query: Query<&Transform, With<BoxEntity>>,
 ) {
-    if keyboard_input.just_pressed(KeyCode::Space) {
-        if let Ok(ship_transform) = query.get_single() {
-            let fireball_texture = asset_server.load("fireball.png"); // Make sure you have a fireball texture
+    for ship_transform in ship_query.iter() {
+        for box_transform in box_query.iter() {
+            let collision_distance = 30.0;
+            if ship_transform
+                .translation
+                .distance(box_transform.translation) < collision_distance
+            {
+                let fireball_texture = asset_server.load("explo_a_sheet.png");
 
-            commands.spawn((
-                SpriteBundle {
-                    texture: fireball_texture,
-                    transform: Transform {
-                        translation: ship_transform.translation,
-                        scale: Vec3::new(0.1, 0.1, 1.0),
+                commands.spawn((
+                    SpriteBundle {
+                        texture: fireball_texture,
+                        transform: Transform {
+                            translation: ship_transform.translation,
+                            scale: Vec3::new(0.1, 0.1, 1.0),
+                            ..Default::default()
+                        },
                         ..Default::default()
                     },
-                    ..Default::default()
-                },
-                Fireball,
-            ));
+                    Fireball,
+                ));
+            }
         }
     }
 }

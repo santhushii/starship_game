@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use rand::Rng;
-use crate::component::{BoxEntity, BoxDirection, Ship, StartPoint, EndPoint, Fireball};
+use crate::component::{BoxEntity, BoxDirection, Ship, StartPoint, EndPoint};
 
 pub fn setup(
     mut commands: Commands,
@@ -22,7 +22,7 @@ pub fn setup(
         let half_height = window.height() / 2.0;
 
         // Spawn the start point visual (e.g., a green square)
-        commands.spawn(( 
+        commands.spawn((
             SpriteBundle {
                 sprite: Sprite {
                     color: Color::GREEN,
@@ -39,7 +39,7 @@ pub fn setup(
         ));
 
         // Spawn the end point visual (e.g., a red square)
-        commands.spawn(( 
+        commands.spawn((
             SpriteBundle {
                 sprite: Sprite {
                     color: Color::RED,
@@ -56,7 +56,7 @@ pub fn setup(
         ));
 
         // Spawn the ship near the start point (right side)
-        commands.spawn(( 
+        commands.spawn((
             SpriteBundle {
                 texture: ship_handle,
                 transform: Transform {
@@ -70,8 +70,8 @@ pub fn setup(
             Ship,
         ));
 
-        // Spawn 5 boxes at random positions
-        let num_boxes = 5;
+        // Spawn 10 boxes at random positions
+        let num_boxes = 10;
         let mut rng = rand::thread_rng(); // Create a random number generator
         for _ in 0..num_boxes {
             let x = rng.gen_range(-half_width + margin..half_width - margin);
@@ -84,7 +84,7 @@ pub fn setup(
                 0.0,
             ).normalize_or_zero();
 
-            commands.spawn(( 
+            commands.spawn((
                 SpriteBundle {
                     texture: box_handle.clone(),
                     transform: Transform {
@@ -115,22 +115,10 @@ pub fn box_movement(
         // Optionally, handle boundary collisions or change direction randomly
         let half_width = 400.0; // Adjust this based on your window size or requirements
         let half_height = 300.0; // Adjust this based on your window size or requirements
-        
+
+        // Reverse direction when hitting boundaries
         if transform.translation.x.abs() > half_width || transform.translation.y.abs() > half_height {
-            // Reverse direction when hitting boundaries
             direction.0 *= -1.0;
         }
-    }
-}
-
-pub fn fireball_movement(
-    time: Res<Time>,
-    mut query: Query<(&mut Transform, &Fireball)>,
-) {
-    for (mut transform, _) in query.iter_mut() {
-        let speed = 300.0;
-        transform.translation += Vec3::new(speed * time.delta_seconds(), 0.0, 0.0);
-        
-        // Optionally, you can add logic to remove fireballs when they go off-screen or hit an object
     }
 }

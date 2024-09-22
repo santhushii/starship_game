@@ -11,5 +11,6 @@ fn main() {
         .add_system(input::ship_movement)
         .add_system(input::ship_rotation)
         .add_system(system::box_movement)
+        .add_system(input::spawn_fireball)
         .run();
 }
