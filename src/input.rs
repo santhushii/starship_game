@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use crate::component::{Ship, Fireball, BoxEntity, ExplosionTimer, RespawnTimer};
 
-// Ship movement function with arrow keys and WASD keys
+// Ship movement function with arrow keys and WASD support
 pub fn ship_movement(
     keyboard_input: Res<Input<KeyCode>>,
     mut query: Query<&mut Transform, With<Ship>>,
@@ -12,7 +12,7 @@ pub fn ship_movement(
     if let Ok(mut transform) = query.get_single_mut() {
         let mut direction = Vec3::ZERO;
 
-        // Check if any arrow key or WASD key is pressed
+        // Check for arrow keys and WASD keys for movement
         if keyboard_input.pressed(KeyCode::Up) || keyboard_input.pressed(KeyCode::W) {
             direction.y += 1.0;
         }
@@ -26,11 +26,11 @@ pub fn ship_movement(
             direction.x += 1.0;
         }
 
-        // Adjust ship's position based on input, with increased speed
-        let speed = 500.0; // Adjusted the speed for faster movement
+        // Adjust ship's position based on input
+        let speed = 200.0;
         transform.translation += direction.normalize_or_zero() * speed * time.delta_seconds();
 
-        // Boundary clamping
+        // Boundary clamping to keep the ship within the window
         if let Ok(window) = windows.get_single() {
             let half_width = window.width() / 2.0;
             let half_height = window.height() / 2.0;
@@ -46,7 +46,7 @@ pub fn ship_movement(
     }
 }
 
-// Rotate ship towards mouse
+// Rotate ship towards mouse cursor
 pub fn rotate_ship_towards_mouse(
     mut query: Query<&mut Transform, With<Ship>>,
     windows: Query<&Window, With<PrimaryWindow>>,
@@ -54,14 +54,25 @@ pub fn rotate_ship_towards_mouse(
 ) {
     if let Ok(mut transform) = query.get_single_mut() {
         if let Ok(window) = windows.get_single() {
+            // Get window size to calculate the center
+            let window_center = Vec2::new(window.width() / 2.0, window.height() / 2.0);
+
             for event in cursor_moved_events.iter() {
+                // Get the ship's current position
                 let ship_position = Vec2::new(transform.translation.x, transform.translation.y);
-                let window_center = Vec2::new(window.width() / 2.0, window.height() / 2.0);
+
+                // Adjust mouse position relative to the window's center
                 let mouse_position = event.position - window_center;
 
+                // Calculate the direction vector from the ship to the mouse
                 let direction = mouse_position - ship_position;
+
+                // Only rotate if there's significant distance
                 if direction.length_squared() > 0.0 {
+                    // Calculate the angle using atan2 to get the correct angle in radians
                     let angle = direction.y.atan2(direction.x);
+
+                    // Rotate the ship towards the mouse
                     transform.rotation = Quat::from_rotation_z(angle);
                 }
             }
@@ -69,7 +80,7 @@ pub fn rotate_ship_towards_mouse(
     }
 }
 
-// Collision detection and explosion
+// Collision detection and explosion effect
 pub fn detect_collision_and_explode(
     mut commands: Commands,
     asset_server: Res<AssetServer>,

@@ -24,10 +24,10 @@ pub struct StartPoint;
 #[derive(Component)]
 pub struct EndPoint;
 
-// Resource for managing explosion duration
+// Explosion timer resource
 #[derive(Resource)]
 pub struct ExplosionTimer(pub Option<f32>);
 
-// RespawnTimer component for ship respawn after explosion
+// Respawn timer component for ship respawn after explosion
 #[derive(Component)]
 pub struct RespawnTimer(pub Timer);

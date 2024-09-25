@@ -2219,8 +2219,6 @@ name = "new_ship"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy_audio",
- "bevy_winit",
  "rand",
 ]
 

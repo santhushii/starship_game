@@ -3,21 +3,25 @@ use bevy::window::PrimaryWindow;
 use rand::Rng;
 use crate::component::{BoxEntity, BoxDirection, Ship, StartPoint, EndPoint};
 
+// This system sets up the initial game entities, like the ship, start point, end point, and boxes.
 pub fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     windows: Query<&Window, With<PrimaryWindow>>,
 ) {
+    // Spawn the 2D camera.
     commands.spawn(Camera2dBundle::default());
 
     let ship_handle = asset_server.load("ship.png");
     let box_handle = asset_server.load("box.png");
 
+    // Get the window dimensions
     if let Ok(window) = windows.get_single() {
         let margin = 20.0;
         let half_width = window.width() / 2.0;
         let half_height = window.height() / 2.0;
 
+        // Spawn the starting point (green square).
         commands.spawn((
             SpriteBundle {
                 sprite: Sprite {
@@ -34,6 +38,7 @@ pub fn setup(
             StartPoint,
         ));
 
+        // Spawn the ending point (red square).
         commands.spawn((
             SpriteBundle {
                 sprite: Sprite {
@@ -50,6 +55,7 @@ pub fn setup(
             EndPoint,
         ));
 
+        // Spawn the ship entity at the starting point.
         commands.spawn((
             SpriteBundle {
                 texture: ship_handle,
@@ -64,6 +70,7 @@ pub fn setup(
             Ship,
         ));
 
+        // Spawn 10 moving boxes at random positions with random directions.
         let num_boxes = 10;
         let mut rng = rand::thread_rng();
         for _ in 0..num_boxes {
@@ -93,37 +100,53 @@ pub fn setup(
     }
 }
 
-// Box movement with collision detection and reversal of direction
+// This system handles box movement and collision detection with boundary clamping.
 pub fn box_movement(
     time: Res<Time>,
     mut query: Query<(&mut Transform, &mut BoxDirection), With<BoxEntity>>,
 ) {
     let speed = 100.0;
+    let half_width = 400.0;
+    let half_height = 300.0;
 
-    // Iterate over each box and move it
-    for (mut transform, mut direction) in query.iter_mut() {
-        let movement = direction.0 * speed * time.delta_seconds();
-        transform.translation += movement;
+    // Collect box data to avoid borrowing issues
+    let mut box_data: Vec<(Vec3, Vec3)> = query.iter_mut()
+        .map(|(transform, direction)| (transform.translation, direction.0))
+        .collect();
 
-        let half_width = 400.0;
-        let half_height = 300.0;
+    let mut new_positions = vec![];
 
-        if transform.translation.x.abs() > half_width {
-            direction.0.x = -direction.0.x;
+    // Move boxes and handle boundary detection
+    for (translation, direction) in box_data.iter_mut() {
+        let movement = *direction * speed * time.delta_seconds();
+        *translation += movement;
+
+        // Boundary detection
+        if translation.x.abs() > half_width {
+            direction.x = -direction.x;
         }
-        if transform.translation.y.abs() > half_height {
-            direction.0.y = -direction.0.y;
+        if translation.y.abs() > half_height {
+            direction.y = -direction.y;
+        }
+
+        new_positions.push(*translation); // Store the new position
+    }
+
+    // Collision detection (handled in a separate loop after all movements)
+    for i in 0..box_data.len() {
+        for j in (i + 1)..box_data.len() {
+            if new_positions[i].distance(new_positions[j]) < 40.0 {
+                // Swap directions on collision
+                let temp = box_data[i].1;
+                box_data[i].1 = box_data[j].1;
+                box_data[j].1 = temp;
+            }
         }
     }
 
-    // Nested loop for collision detection
-    let mut combinations = query.iter_combinations_mut();
-    while let Some([(mut transform_a, mut direction_a), (mut transform_b, mut direction_b)]) = combinations.fetch_next() {
-        if transform_a.translation.distance(transform_b.translation) < 40.0 {
-            // Reverse directions on collision
-            let temp = direction_a.0;
-            direction_a.0 = direction_b.0;
-            direction_b.0 = temp;
-        }
+    // Apply changes back to the entities
+    for ((mut transform, mut direction), (new_translation, new_direction)) in query.iter_mut().zip(box_data.iter()) {
+        transform.translation = *new_translation;
+        direction.0 = *new_direction;
     }
 }
