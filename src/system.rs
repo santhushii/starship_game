@@ -100,16 +100,19 @@ pub fn setup(
         }
     }
 }
-
 pub fn box_movement(
     time: Res<Time>,
-    mut box_query: Query<(&mut Transform, &mut BoxDirection), With<BoxEntity>>,
+    mut query: Query<(&mut Transform, &mut BoxDirection), With<BoxEntity>>,
 ) {
-    let box_positions: Vec<Transform> = box_query.iter().map(|(transform, _)| transform.clone()).collect();
+    for (mut transform, mut direction) in query.iter_mut() {
+        let speed = 150.0; // Set the box speed
 
-    for (i, (mut transform, mut direction)) in box_query.iter_mut().enumerate() {
-        let speed = 50.0;
-        let movement = direction.0 * speed * time.delta_seconds();
+        // If the direction is too small, regenerate a new direction to ensure movement
+        if direction.0.length_squared() < 0.01 {
+            direction.0 = Vec3::new(rand::random::<f32>() * 2.0 - 1.0, rand::random::<f32>() * 2.0 - 1.0, 0.0).normalize_or_zero();
+        }
+
+        let movement = direction.0 * speed * time.delta_seconds(); // Calculate movement based on direction
 
         // Apply movement to box
         transform.translation += movement;
@@ -121,15 +124,6 @@ pub fn box_movement(
         // Reverse direction when hitting boundaries
         if transform.translation.x.abs() > half_width || transform.translation.y.abs() > half_height {
             direction.0 = -direction.0;
-        }
-
-        // Check for collisions with other boxes
-        for (j, other_transform) in box_positions.iter().enumerate() {
-            if i != j && transform.translation.distance(other_transform.translation) < 30.0 {
-                // Reverse direction on collision with another box
-                direction.0 = -direction.0;
-                break;
-            }
         }
     }
 }
