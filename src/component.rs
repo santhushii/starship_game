@@ -27,3 +27,7 @@ pub struct EndPoint;
 // Resource to manage fireball's explosion duration
 #[derive(Resource)]
 pub struct ExplosionTimer(pub Option<f32>);
+
+// Custom component for respawn timer
+#[derive(Component)]
+pub struct RespawnTimer(pub Timer);

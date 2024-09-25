@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use crate::component::{Ship, Fireball, BoxEntity, ExplosionTimer};
+use crate::component::{Ship, Fireball, BoxEntity, ExplosionTimer, RespawnTimer};
 
 // Ship movement function, moves the ship based on keyboard input
 pub fn ship_movement(
@@ -83,6 +83,7 @@ pub fn detect_collision_and_explode(
     box_query: Query<&Transform, With<BoxEntity>>,
     time: Res<Time>,
     mut timer: ResMut<ExplosionTimer>,
+    windows: Query<&Window, With<PrimaryWindow>>,
 ) {
     if let Ok((ship_entity, ship_transform)) = ship_query.get_single_mut() {
         for box_transform in box_query.iter() {
@@ -103,11 +104,31 @@ pub fn detect_collision_and_explode(
                     Fireball,
                 ));
 
-                // Start the explosion timer
+                // Start the explosion timer (starship disappears)
                 timer.0 = Some(0.5); // Fireball lasts 0.5 seconds
 
                 // Remove the ship entity (simulate explosion)
                 commands.entity(ship_entity).despawn();
+
+                // Reappear the ship after 2 seconds
+                let reappear_time = 2.0;
+                let half_width = windows.get_single().unwrap().width() / 2.0;
+                let half_height = windows.get_single().unwrap().height() / 2.0;
+
+                let ship_texture = asset_server.load("ship.png");
+                let new_ship = commands.spawn(SpriteBundle {
+                    texture: ship_texture,
+                    transform: Transform {
+                        translation: Vec3::new(-half_width + 40.0, half_height - 40.0, 0.0), // Respawn at initial position
+                        scale: Vec3::new(0.1, 0.1, 1.0),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                }).insert(Ship) // Insert the Ship component separately
+                .id();
+
+                // Add the RespawnTimer component after spawning the entity
+                commands.entity(new_ship).insert(RespawnTimer(Timer::from_seconds(reappear_time, TimerMode::Once)));
             }
         }
     }
