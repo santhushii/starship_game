@@ -1,16 +1,28 @@
 use bevy::prelude::*;
-use bevy::window::PrimaryWindow;
-use crate::component::{Ship, Fireball, BoxEntity, ExplosionTimer, RespawnTimer};
+use crate::component::{Ship, BoxEntity, StartPoint, EndPoint, GameTimer};
 
 // Ship movement function with arrow keys and WASD support
 pub fn ship_movement(
     keyboard_input: Res<Input<KeyCode>>,
-    mut query: Query<&mut Transform, With<Ship>>,
+    mut param_set: ParamSet<(
+        Query<&mut Transform, With<Ship>>,
+        Query<&Transform, With<StartPoint>>,
+    )>,
     time: Res<Time>,
-    windows: Query<&Window, With<PrimaryWindow>>,
+    mut timer: ResMut<GameTimer>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
 ) {
-    if let Ok(mut transform) = query.get_single_mut() {
+    if let Ok(mut transform) = param_set.p0().get_single_mut() {
         let mut direction = Vec3::ZERO;
+
+        // Start the game timer when the player presses a movement key
+        if timer.0.is_none() && (keyboard_input.pressed(KeyCode::Up) || keyboard_input.pressed(KeyCode::W) ||
+            keyboard_input.pressed(KeyCode::Down) || keyboard_input.pressed(KeyCode::S) ||
+            keyboard_input.pressed(KeyCode::Left) || keyboard_input.pressed(KeyCode::A) ||
+            keyboard_input.pressed(KeyCode::Right) || keyboard_input.pressed(KeyCode::D)) {
+            timer.0 = Some(0.0);
+        }
 
         // Check for arrow keys and WASD keys for movement
         if keyboard_input.pressed(KeyCode::Up) || keyboard_input.pressed(KeyCode::W) {
@@ -31,121 +43,98 @@ pub fn ship_movement(
         transform.translation += direction.normalize_or_zero() * speed * time.delta_seconds();
 
         // Boundary clamping to keep the ship within the window
-        if let Ok(window) = windows.get_single() {
-            let half_width = window.width() / 2.0;
-            let half_height = window.height() / 2.0;
+        let half_width = 400.0; // Assume fixed window width
+        let half_height = 300.0; // Assume fixed window height
 
-            let min_x = -half_width + 60.0;
-            let max_x = half_width - 60.0;
-            let min_y = -half_height + 60.0;
-            let max_y = half_height - 60.0;
+        let min_x = -half_width + 60.0;
+        let max_x = half_width - 60.0;
+        let min_y = -half_height + 60.0;
+        let max_y = half_height - 60.0;
 
-            transform.translation.x = transform.translation.x.clamp(min_x, max_x);
-            transform.translation.y = transform.translation.y.clamp(min_y, max_y);
+        transform.translation.x = transform.translation.x.clamp(min_x, max_x);
+        transform.translation.y = transform.translation.y.clamp(min_y, max_y);
+    }
+}
+
+// Rotate ship in 4 directions based on mouse click
+pub fn rotate_ship_on_click(
+    mut ship_query: Query<&mut Transform, With<Ship>>,
+    mouse_button_input: Res<Input<MouseButton>>,
+) {
+    if let Ok(mut transform) = ship_query.get_single_mut() {
+        if mouse_button_input.just_pressed(MouseButton::Left) {
+            let current_rotation = transform.rotation.to_euler(EulerRot::XYZ).2;
+
+            // Rotate the ship by 90 degrees (FRAC_PI_2 is π/2, or 90 degrees in radians)
+            let new_rotation = current_rotation + std::f32::consts::FRAC_PI_2;
+            transform.rotation = Quat::from_rotation_z(new_rotation);
         }
     }
 }
 
-// Rotate ship towards mouse cursor
-pub fn rotate_ship_towards_mouse(
-    mut query: Query<&mut Transform, With<Ship>>,
-    windows: Query<&Window, With<PrimaryWindow>>,
-    mut cursor_moved_events: EventReader<CursorMoved>,
+// End the game when the ship reaches the end point
+pub fn check_end_point_reached(
+    mut commands: Commands,
+    mut query: Query<(Entity, &Transform), With<Ship>>,
+    end_point_query: Query<&Transform, With<EndPoint>>,
+    mut timer: ResMut<GameTimer>,
 ) {
-    if let Ok(mut transform) = query.get_single_mut() {
-        if let Ok(window) = windows.get_single() {
-            // Get window size to calculate the center
-            let window_center = Vec2::new(window.width() / 2.0, window.height() / 2.0);
-
-            for event in cursor_moved_events.iter() {
-                // Get the ship's current position
-                let ship_position = Vec2::new(transform.translation.x, transform.translation.y);
-
-                // Adjust mouse position relative to the window's center
-                let mouse_position = event.position - window_center;
-
-                // Calculate the direction vector from the ship to the mouse
-                let direction = mouse_position - ship_position;
-
-                // Only rotate if there's significant distance
-                if direction.length_squared() > 0.0 {
-                    // Calculate the angle using atan2 to get the correct angle in radians
-                    let angle = direction.y.atan2(direction.x);
-
-                    // Rotate the ship towards the mouse
-                    transform.rotation = Quat::from_rotation_z(angle);
-                }
+    if let Ok((ship_entity, ship_transform)) = query.get_single_mut() {
+        if let Ok(end_point_transform) = end_point_query.get_single() {
+            let collision_distance = 30.0;
+            if ship_transform.translation.distance(end_point_transform.translation) < collision_distance {
+                commands.entity(ship_entity).despawn(); // Despawn the ship
+                timer.1 = true; // Stop the timer
+                println!("Game Over! Reached the End Point.");
             }
         }
     }
 }
 
-// Collision detection and explosion effect
-pub fn detect_collision_and_explode(
+// Track and display the game timer
+pub fn track_game_timer(time: Res<Time>, mut timer: ResMut<GameTimer>) {
+    // Take an immutable copy of timer.1 (whether the timer is stopped)
+    let timer_stopped = timer.1;
+
+    // Now that we have taken the immutable borrow, we can mutably borrow timer.0
+    if let Some(ref mut elapsed_time) = timer.0 {
+        if !timer_stopped {
+            *elapsed_time += time.delta_seconds();
+            println!("Game Timer: {:.2} seconds", *elapsed_time);
+        }
+    }
+}
+
+// Collision detection and reset ship at start point
+pub fn detect_collision_and_reset(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     mut ship_query: Query<(Entity, &Transform), With<Ship>>,
     box_query: Query<&Transform, With<BoxEntity>>,
-    mut timer: ResMut<ExplosionTimer>,
-    windows: Query<&Window, With<PrimaryWindow>>,
+    start_point_query: Query<&Transform, With<StartPoint>>,
+    asset_server: Res<AssetServer>,
 ) {
     if let Ok((ship_entity, ship_transform)) = ship_query.get_single_mut() {
         for box_transform in box_query.iter() {
             let collision_distance = 30.0;
             if ship_transform.translation.distance(box_transform.translation) < collision_distance {
-                let fireball_texture = asset_server.load("explo_a_sheet.png");
-                commands.spawn((
-                    SpriteBundle {
-                        texture: fireball_texture,
+                // Despawn the current ship and reset it at the starting point
+                commands.entity(ship_entity).despawn();
+
+                if let Ok(start_transform) = start_point_query.get_single() {
+                    let start_position = start_transform.translation;
+                    let ship_texture = asset_server.load("ship.png");
+
+                    commands.spawn(SpriteBundle {
+                        texture: ship_texture,
                         transform: Transform {
-                            translation: ship_transform.translation,
+                            translation: start_position,
                             scale: Vec3::new(0.1, 0.1, 1.0),
                             ..Default::default()
                         },
                         ..Default::default()
-                    },
-                    Fireball,
-                ));
-
-                timer.0 = Some(0.5); // Fireball lasts 0.5 seconds
-                commands.entity(ship_entity).despawn();
-
-                let reappear_time = 2.0;
-                let half_width = windows.get_single().unwrap().width() / 2.0;
-                let half_height = windows.get_single().unwrap().height() / 2.0;
-
-                let ship_texture = asset_server.load("ship.png");
-                let new_ship = commands.spawn(SpriteBundle {
-                    texture: ship_texture,
-                    transform: Transform {
-                        translation: Vec3::new(-half_width + 40.0, half_height - 40.0, 0.0),
-                        scale: Vec3::new(0.1, 0.1, 1.0),
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                }).insert(Ship)
-                .id();
-
-                commands.entity(new_ship).insert(RespawnTimer(Timer::from_seconds(reappear_time, TimerMode::Once)));
+                    }).insert(Ship);
+                }
             }
-        }
-    }
-}
-
-// Despawn fireball after explosion timer ends
-pub fn fireball_despawn(
-    mut commands: Commands,
-    time: Res<Time>,
-    mut query: Query<(Entity, &Fireball)>,
-    mut timer: ResMut<ExplosionTimer>,
-) {
-    if let Some(time_left) = &mut timer.0 {
-        *time_left -= time.delta_seconds();
-        if *time_left <= 0.0 {
-            for (entity, _) in query.iter_mut() {
-                commands.entity(entity).despawn();
-            }
-            timer.0 = None;
         }
     }
 }

@@ -31,3 +31,7 @@ pub struct ExplosionTimer(pub Option<f32>);
 // Respawn timer component for ship respawn after explosion
 #[derive(Component)]
 pub struct RespawnTimer(pub Timer);
+
+// Game timer resource
+#[derive(Resource)]
+pub struct GameTimer(pub Option<f32>, pub bool); // Option<f32>: elapsed time, bool: stop timer

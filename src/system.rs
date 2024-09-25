@@ -22,53 +22,46 @@ pub fn setup(
         let half_height = window.height() / 2.0;
 
         // Spawn the starting point (green square).
-        commands.spawn((
-            SpriteBundle {
-                sprite: Sprite {
-                    color: Color::GREEN,
-                    ..Default::default()
-                },
-                transform: Transform {
-                    translation: Vec3::new(-half_width + margin, half_height - margin, 0.0),
-                    scale: Vec3::new(20.0, 20.0, 1.0),
-                    ..Default::default()
-                },
+        let start_point_position = Vec3::new(-half_width + margin, half_height - margin, 0.0);
+        commands.spawn(SpriteBundle {
+            sprite: Sprite {
+                color: Color::GREEN,
                 ..Default::default()
             },
-            StartPoint,
-        ));
+            transform: Transform {
+                translation: start_point_position,
+                scale: Vec3::new(20.0, 20.0, 1.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        }).insert(StartPoint);
+
+        // Spawn the ship exactly at the start point.
+        commands.spawn(SpriteBundle {
+            texture: ship_handle.clone(),
+            transform: Transform {
+                translation: start_point_position, // Start the ship at the same position as start point
+                scale: Vec3::new(0.1, 0.1, 1.0),
+                rotation: Quat::from_rotation_z(0.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        }).insert(Ship);
 
         // Spawn the ending point (red square).
-        commands.spawn((
-            SpriteBundle {
-                sprite: Sprite {
-                    color: Color::RED,
-                    ..Default::default()
-                },
-                transform: Transform {
-                    translation: Vec3::new(half_width - margin, -half_height + margin, 0.0),
-                    scale: Vec3::new(20.0, 20.0, 1.0),
-                    ..Default::default()
-                },
+        let end_point_position = Vec3::new(half_width - margin, -half_height + margin, 0.0);
+        commands.spawn(SpriteBundle {
+            sprite: Sprite {
+                color: Color::RED,
                 ..Default::default()
             },
-            EndPoint,
-        ));
-
-        // Spawn the ship entity at the starting point.
-        commands.spawn((
-            SpriteBundle {
-                texture: ship_handle,
-                transform: Transform {
-                    translation: Vec3::new(-half_width + margin + 40.0, half_height - margin - 40.0, 0.0),
-                    scale: Vec3::new(0.1, 0.1, 1.0),
-                    rotation: Quat::from_rotation_z(0.0),
-                    ..Default::default()
-                },
+            transform: Transform {
+                translation: end_point_position,
+                scale: Vec3::new(20.0, 20.0, 1.0),
                 ..Default::default()
             },
-            Ship,
-        ));
+            ..Default::default()
+        }).insert(EndPoint);
 
         // Spawn 10 moving boxes at random positions with random directions.
         let num_boxes = 10;
@@ -83,19 +76,15 @@ pub fn setup(
                 0.0,
             ).normalize_or_zero();
 
-            commands.spawn((
-                SpriteBundle {
-                    texture: box_handle.clone(),
-                    transform: Transform {
-                        translation: Vec3::new(x, y, 0.0),
-                        scale: Vec3::new(0.2, 0.2, 1.0),
-                        ..Default::default()
-                    },
+            commands.spawn(SpriteBundle {
+                texture: box_handle.clone(),
+                transform: Transform {
+                    translation: Vec3::new(x, y, 0.0),
+                    scale: Vec3::new(0.2, 0.2, 1.0),
                     ..Default::default()
                 },
-                BoxEntity,
-                BoxDirection(direction),
-            ));
+                ..Default::default()
+            }).insert(BoxEntity).insert(BoxDirection(direction));
         }
     }
 }
