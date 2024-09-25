@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use crate::component::{Ship, Fireball, BoxEntity, ExplosionTimer, RespawnTimer};
 
-// Ship movement function
+// Ship movement function with arrow keys and WASD keys
 pub fn ship_movement(
     keyboard_input: Res<Input<KeyCode>>,
     mut query: Query<&mut Transform, With<Ship>>,
@@ -12,22 +12,22 @@ pub fn ship_movement(
     if let Ok(mut transform) = query.get_single_mut() {
         let mut direction = Vec3::ZERO;
 
-        // Keyboard inputs for movement
-        if keyboard_input.pressed(KeyCode::Up) {
+        // Check if any arrow key or WASD key is pressed
+        if keyboard_input.pressed(KeyCode::Up) || keyboard_input.pressed(KeyCode::W) {
             direction.y += 1.0;
         }
-        if keyboard_input.pressed(KeyCode::Down) {
+        if keyboard_input.pressed(KeyCode::Down) || keyboard_input.pressed(KeyCode::S) {
             direction.y -= 1.0;
         }
-        if keyboard_input.pressed(KeyCode::Left) {
+        if keyboard_input.pressed(KeyCode::Left) || keyboard_input.pressed(KeyCode::A) {
             direction.x -= 1.0;
         }
-        if keyboard_input.pressed(KeyCode::Right) {
+        if keyboard_input.pressed(KeyCode::Right) || keyboard_input.pressed(KeyCode::D) {
             direction.x += 1.0;
         }
 
-        // Adjust ship's position based on input
-        let speed = 200.0;
+        // Adjust ship's position based on input, with increased speed
+        let speed = 500.0; // Adjusted the speed for faster movement
         transform.translation += direction.normalize_or_zero() * speed * time.delta_seconds();
 
         // Boundary clamping
