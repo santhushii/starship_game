@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use crate::component::{Ship, Fireball, BoxEntity, ExplosionTimer, RespawnTimer};
 
-// Ship movement function, moves the ship based on keyboard input
+// Ship movement function
 pub fn ship_movement(
     keyboard_input: Res<Input<KeyCode>>,
     mut query: Query<&mut Transform, With<Ship>>,
@@ -12,7 +12,7 @@ pub fn ship_movement(
     if let Ok(mut transform) = query.get_single_mut() {
         let mut direction = Vec3::ZERO;
 
-        // Handle input for movement
+        // Keyboard inputs for movement
         if keyboard_input.pressed(KeyCode::Up) {
             direction.y += 1.0;
         }
@@ -26,48 +26,42 @@ pub fn ship_movement(
             direction.x += 1.0;
         }
 
-        // Adjust the ship's position based on the input
+        // Adjust ship's position based on input
         let speed = 200.0;
         transform.translation += direction.normalize_or_zero() * speed * time.delta_seconds();
 
-        // Get window size for boundary clamping
+        // Boundary clamping
         if let Ok(window) = windows.get_single() {
             let half_width = window.width() / 2.0;
             let half_height = window.height() / 2.0;
 
-            // Define the margin boundaries
             let min_x = -half_width + 60.0;
             let max_x = half_width - 60.0;
             let min_y = -half_height + 60.0;
             let max_y = half_height - 60.0;
 
-            // Clamp the ship's position to stay within the defined boundaries
             transform.translation.x = transform.translation.x.clamp(min_x, max_x);
             transform.translation.y = transform.translation.y.clamp(min_y, max_y);
         }
     }
 }
 
-// Function to detect mouse click and rotate the ship towards the mouse pointer
+// Rotate ship towards mouse
 pub fn rotate_ship_towards_mouse(
     mut query: Query<&mut Transform, With<Ship>>,
     windows: Query<&Window, With<PrimaryWindow>>,
-    buttons: Res<Input<MouseButton>>,
     mut cursor_moved_events: EventReader<CursorMoved>,
 ) {
-    if buttons.just_pressed(MouseButton::Left) {
-        if let Ok(mut transform) = query.get_single_mut() {
-            if let Ok(window) = windows.get_single() {
-                for event in cursor_moved_events.iter() {
-                    // Calculate the vector pointing from the ship to the mouse cursor
-                    let ship_position = Vec2::new(transform.translation.x, transform.translation.y);
-                    let mouse_position = Vec2::new(event.position.x - window.width() / 2.0, event.position.y - window.height() / 2.0);
+    if let Ok(mut transform) = query.get_single_mut() {
+        if let Ok(window) = windows.get_single() {
+            for event in cursor_moved_events.iter() {
+                let ship_position = Vec2::new(transform.translation.x, transform.translation.y);
+                let window_center = Vec2::new(window.width() / 2.0, window.height() / 2.0);
+                let mouse_position = event.position - window_center;
 
-                    // Calculate the angle between the ship and the mouse
-                    let direction = mouse_position - ship_position;
+                let direction = mouse_position - ship_position;
+                if direction.length_squared() > 0.0 {
                     let angle = direction.y.atan2(direction.x);
-
-                    // Apply the rotation to the ship's transform
                     transform.rotation = Quat::from_rotation_z(angle);
                 }
             }
@@ -75,13 +69,12 @@ pub fn rotate_ship_towards_mouse(
     }
 }
 
-// Function to detect collisions between the ship and boxes and trigger explosion
+// Collision detection and explosion
 pub fn detect_collision_and_explode(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut ship_query: Query<(Entity, &Transform), With<Ship>>,
     box_query: Query<&Transform, With<BoxEntity>>,
-    time: Res<Time>,
     mut timer: ResMut<ExplosionTimer>,
     windows: Query<&Window, With<PrimaryWindow>>,
 ) {
@@ -89,7 +82,6 @@ pub fn detect_collision_and_explode(
         for box_transform in box_query.iter() {
             let collision_distance = 30.0;
             if ship_transform.translation.distance(box_transform.translation) < collision_distance {
-                // Spawn fireball on collision
                 let fireball_texture = asset_server.load("explo_a_sheet.png");
                 commands.spawn((
                     SpriteBundle {
@@ -104,13 +96,9 @@ pub fn detect_collision_and_explode(
                     Fireball,
                 ));
 
-                // Start the explosion timer (starship disappears)
                 timer.0 = Some(0.5); // Fireball lasts 0.5 seconds
-
-                // Remove the ship entity (simulate explosion)
                 commands.entity(ship_entity).despawn();
 
-                // Reappear the ship after 2 seconds
                 let reappear_time = 2.0;
                 let half_width = windows.get_single().unwrap().width() / 2.0;
                 let half_height = windows.get_single().unwrap().height() / 2.0;
@@ -119,22 +107,21 @@ pub fn detect_collision_and_explode(
                 let new_ship = commands.spawn(SpriteBundle {
                     texture: ship_texture,
                     transform: Transform {
-                        translation: Vec3::new(-half_width + 40.0, half_height - 40.0, 0.0), // Respawn at initial position
+                        translation: Vec3::new(-half_width + 40.0, half_height - 40.0, 0.0),
                         scale: Vec3::new(0.1, 0.1, 1.0),
                         ..Default::default()
                     },
                     ..Default::default()
-                }).insert(Ship) // Insert the Ship component separately
+                }).insert(Ship)
                 .id();
 
-                // Add the RespawnTimer component after spawning the entity
                 commands.entity(new_ship).insert(RespawnTimer(Timer::from_seconds(reappear_time, TimerMode::Once)));
             }
         }
     }
 }
 
-// Function to despawn the fireball after a short time
+// Despawn fireball after explosion timer ends
 pub fn fireball_despawn(
     mut commands: Commands,
     time: Res<Time>,
@@ -145,10 +132,9 @@ pub fn fireball_despawn(
         *time_left -= time.delta_seconds();
         if *time_left <= 0.0 {
             for (entity, _) in query.iter_mut() {
-                // Despawn the fireball after timer runs out
                 commands.entity(entity).despawn();
             }
-            timer.0 = None; // Reset the timer
+            timer.0 = None;
         }
     }
 }

@@ -1,33 +1,33 @@
 use bevy::prelude::*;
 
-// Ship component to represent the ship entity
+// Ship component
 #[derive(Component)]
 pub struct Ship;
 
-// BoxEntity component to represent the box entity
+// BoxEntity component
 #[derive(Component)]
 pub struct BoxEntity;
 
-// BoxDirection component to store the movement direction of boxes
+// BoxDirection component for box movement direction
 #[derive(Component)]
 pub struct BoxDirection(pub Vec3);
 
-// Fireball component to represent a fireball entity
+// Fireball component
 #[derive(Component)]
 pub struct Fireball;
 
-// StartPoint component to represent the start point in the game
+// StartPoint component for game start point
 #[derive(Component)]
 pub struct StartPoint;
 
-// EndPoint component to represent the end point in the game
+// EndPoint component for game end point
 #[derive(Component)]
 pub struct EndPoint;
 
-// Resource to manage fireball's explosion duration
+// Resource for managing explosion duration
 #[derive(Resource)]
 pub struct ExplosionTimer(pub Option<f32>);
 
-// Custom component for respawn timer
+// RespawnTimer component for ship respawn after explosion
 #[derive(Component)]
 pub struct RespawnTimer(pub Timer);
