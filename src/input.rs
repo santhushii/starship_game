@@ -48,6 +48,33 @@ pub fn ship_movement(
     }
 }
 
+// Function to detect mouse click and rotate the ship towards the mouse pointer
+pub fn rotate_ship_towards_mouse(
+    mut query: Query<&mut Transform, With<Ship>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    buttons: Res<Input<MouseButton>>,
+    mut cursor_moved_events: EventReader<CursorMoved>,
+) {
+    if buttons.just_pressed(MouseButton::Left) {
+        if let Ok(mut transform) = query.get_single_mut() {
+            if let Ok(window) = windows.get_single() {
+                for event in cursor_moved_events.iter() {
+                    // Calculate the vector pointing from the ship to the mouse cursor
+                    let ship_position = Vec2::new(transform.translation.x, transform.translation.y);
+                    let mouse_position = Vec2::new(event.position.x - window.width() / 2.0, event.position.y - window.height() / 2.0);
+
+                    // Calculate the angle between the ship and the mouse
+                    let direction = mouse_position - ship_position;
+                    let angle = direction.y.atan2(direction.x);
+
+                    // Apply the rotation to the ship's transform
+                    transform.rotation = Quat::from_rotation_z(angle);
+                }
+            }
+        }
+    }
+}
+
 // Function to detect collisions between the ship and boxes and trigger explosion
 pub fn detect_collision_and_explode(
     mut commands: Commands,

@@ -103,22 +103,23 @@ pub fn setup(
 
 pub fn box_movement(
     time: Res<Time>,
-    mut query: Query<(&mut Transform, &mut BoxDirection), With<BoxEntity>>,
+    mut query: Query<(&mut Transform, &BoxDirection), With<BoxEntity>>,
 ) {
-    for (mut transform, mut direction) in query.iter_mut() {
-        let speed = 50.0; // Reduced speed for smoother movement
-        let movement = Vec3::new(speed * time.delta_seconds(), speed * time.delta_seconds(), 0.0);
+    for (mut transform, direction) in query.iter_mut() {
+        let speed = 50.0; // Adjust speed for smoother movement
+        let movement = direction.0 * speed * time.delta_seconds(); // Use direction to move
 
-        // Move the box in the current direction
-        transform.translation += direction.0 * movement;
+        // Apply movement to box
+        transform.translation += movement;
 
-        // Optionally, handle boundary collisions or change direction randomly
-        let half_width = 400.0; // Adjust this based on your window size or requirements
-        let half_height = 300.0; // Adjust this based on your window size or requirements
+        // Reverse direction if hitting boundaries
+        let half_width = 400.0; // Adjust this based on window size
+        let half_height = 300.0; // Adjust this based on window size
 
         // Reverse direction when hitting boundaries
         if transform.translation.x.abs() > half_width || transform.translation.y.abs() > half_height {
-            direction.0 *= -1.0;
+            transform.translation.x = transform.translation.x.clamp(-half_width, half_width);
+            transform.translation.y = transform.translation.y.clamp(-half_height, half_height);
         }
     }
 }
