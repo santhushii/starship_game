@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::component::{Ship, BoxEntity, StartPoint, EndPoint, GameTimer, Fireball};
+use crate::component::{Ship, BoxEntity, StartPoint, EndPoint, GameTimer, ShipLives, Fireball};
 
 // Ship movement function with arrow keys and WASD support
 pub fn ship_movement(
@@ -101,19 +101,29 @@ pub fn track_game_timer(time: Res<Time>, mut timer: ResMut<GameTimer>) {
     }
 }
 
-// Collision detection, reset ship at start point, and spawn fireballs
-// Collision detection and reset ship at start point
+// Collision detection, handle ship lives, and spawn fireballs
 pub fn detect_collision_and_spawn_fireballs(
     mut commands: Commands,
     mut ship_query: Query<(Entity, &Transform), With<Ship>>,
     box_query: Query<&Transform, With<BoxEntity>>,
     start_point_query: Query<&Transform, With<StartPoint>>, // Start point position for respawn
     asset_server: Res<AssetServer>,
+    mut lives: ResMut<ShipLives>, // Track the remaining lives
 ) {
     if let Ok((ship_entity, ship_transform)) = ship_query.get_single_mut() {
         for box_transform in box_query.iter() {
             let collision_distance = 30.0;
             if ship_transform.translation.distance(box_transform.translation) < collision_distance {
+                // Reduce lives and check if game over
+                lives.0 -= 1;
+                println!("Lives left: {}", lives.0);
+
+                if lives.0 == 0 {
+                    println!("Game Over! No lives left.");
+                    commands.entity(ship_entity).despawn(); // Despawn the ship
+                    return; // End game, no respawn
+                }
+
                 // Despawn the current ship and reset it at the starting point
                 commands.entity(ship_entity).despawn();
 

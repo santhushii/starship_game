@@ -24,14 +24,10 @@ pub struct StartPoint;
 #[derive(Component)]
 pub struct EndPoint;
 
-// Explosion timer resource
-#[derive(Resource)]
-pub struct ExplosionTimer(pub Option<f32>);
-
-// Respawn timer component for ship respawn after explosion
-#[derive(Component)]
-pub struct RespawnTimer(pub Timer);
-
 // Game timer resource
-#[derive(Resource, Component)]  // Add `Component` to allow usage in Query
+#[derive(Resource, Component)]
 pub struct GameTimer(pub Option<f32>, pub bool); // Option<f32>: elapsed time, bool: stop timer
+
+// Lives resource for tracking starship's lives
+#[derive(Resource, Component)]
+pub struct ShipLives(pub u32); // Track the number of remaining lives

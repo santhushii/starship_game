@@ -8,6 +8,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .insert_resource(component::GameTimer(None, false)) // Add game timer resource
+        .insert_resource(component::ShipLives(5)) // Add resource for 5 ship lives
         .add_startup_system(system::setup) // Set up the initial entities
         .add_system(system::box_movement) // Add box movement system
         .add_system(input::ship_movement) // Add ship movement system

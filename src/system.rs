@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use rand::Rng;
-use crate::component::{BoxEntity, BoxDirection, Ship, StartPoint, EndPoint, GameTimer};
+use crate::component::{BoxEntity, BoxDirection, Ship, StartPoint, EndPoint, GameTimer, ShipLives};
 
 // This system sets up the initial game entities, like the ship, start point, end point, and boxes.
 pub fn setup(
