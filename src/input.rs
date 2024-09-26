@@ -59,7 +59,6 @@ pub fn ship_movement(
     }
 }
 
-
 // Rotate ship in 4 directions based on mouse click
 pub fn rotate_ship_on_click(
     mut ship_query: Query<&mut Transform, With<Ship>>,
@@ -77,11 +76,13 @@ pub fn rotate_ship_on_click(
 }
 
 // End the game when the ship reaches the end point
+// End the game when the ship reaches the end point
 pub fn check_end_point_reached(
     mut commands: Commands,
     mut query: Query<(Entity, &Transform), With<Ship>>,
     end_point_query: Query<&Transform, With<EndPoint>>,
     mut timer: ResMut<GameTimer>,
+    asset_server: Res<AssetServer>, // Add asset server to load fonts for text
 ) {
     if let Ok((ship_entity, ship_transform)) = query.get_single_mut() {
         if let Ok(end_point_transform) = end_point_query.get_single() {
@@ -89,20 +90,29 @@ pub fn check_end_point_reached(
             if ship_transform.translation.distance(end_point_transform.translation) < collision_distance {
                 commands.entity(ship_entity).despawn(); // Despawn the ship
                 timer.1 = true; // Stop the timer
-                println!("Game Over! Reached the End Point.");
+
+                // Display "Level One Complete" on the screen
+                commands.spawn(TextBundle {
+                    text: Text::from_section(
+                        "Level One Complete",
+                        TextStyle {
+                            font: asset_server.load("fonts/FiraSans-Bold.ttf"), // Ensure the font is available
+                            font_size: 60.0,
+                            color: Color::GREEN,
+                        }
+                    ),
+                    style: Style {
+                        position_type: PositionType::Absolute,
+                        position: UiRect {
+                            top: Val::Px(250.0),
+                            left: Val::Px(200.0),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                });
             }
-        }
-    }
-}
-
-// Track and display the game timer
-pub fn track_game_timer(time: Res<Time>, mut timer: ResMut<GameTimer>) {
-    let timer_stopped = timer.1; // Make a copy of timer.1 (whether the timer is stopped)
-
-    if let Some(ref mut elapsed_time) = timer.0 {
-        if !timer_stopped {
-            *elapsed_time += time.delta_seconds();
-            println!("Game Timer: {:.2} seconds", *elapsed_time);
         }
     }
 }
@@ -113,7 +123,7 @@ pub fn detect_collision_and_spawn_fireballs(
     mut ship_query: Query<(Entity, &Transform), With<Ship>>,
     box_query: Query<&Transform, With<BoxEntity>>,
     start_point_query: Query<&Transform, With<StartPoint>>, // Start point position for respawn
-    asset_server: Res<AssetServer>,
+    asset_server: Res<AssetServer>, // Add asset server to load fonts for text
     mut lives: ResMut<ShipLives>, // Track the remaining lives
 ) {
     if let Ok((ship_entity, ship_transform)) = ship_query.get_single_mut() {
@@ -127,6 +137,28 @@ pub fn detect_collision_and_spawn_fireballs(
                 if lives.0 == 0 {
                     println!("Game Over! No lives left.");
                     commands.entity(ship_entity).despawn(); // Despawn the ship
+
+                    // Display "Game Over" on the screen
+                    commands.spawn(TextBundle {
+                        text: Text::from_section(
+                            "Game Over",
+                            TextStyle {
+                                font: asset_server.load("FiraSans-Bold.ttf"), // Correct path to the font
+                                font_size: 80.0,
+                                color: Color::RED,
+                            }
+                        ),
+                        style: Style {
+                            position_type: PositionType::Absolute,
+                            position: UiRect {
+                                top: Val::Px(250.0),
+                                left: Val::Px(200.0),
+                                ..Default::default()
+                            },
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    });
                     return; // End game, no respawn
                 }
 
@@ -150,7 +182,8 @@ pub fn detect_collision_and_spawn_fireballs(
                 }
 
                 // Spawn a fireball at the collision location
-                let fireball_texture = asset_server.load("fireball.png");
+                let fireball_texture = asset_server.load("explo_a_sheet.png");  // Corrected path
+
                 commands.spawn(SpriteBundle {
                     texture: fireball_texture,
                     transform: Transform {

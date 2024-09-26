@@ -189,16 +189,16 @@ pub fn update_timer_display(
     mut timer: ResMut<GameTimer>,
     mut query: Query<&mut Text>,
 ) {
-    let timer_stopped = timer.1;  // Make a copy of `timer.1` (whether it's stopped or not)
+    let timer_stopped = timer.1;  // Check if the timer is stopped
 
     if let Some(ref mut elapsed_time) = timer.0 {
         if !timer_stopped {
-            *elapsed_time += time.delta_seconds();
+            *elapsed_time += time.delta_seconds(); // Increment the timer
         }
 
         // Update the text entity with the elapsed time
         for mut text in query.iter_mut() {
-            text.sections[0].value = format!("Time: {:.2}", elapsed_time);
+            text.sections[0].value = format!("Time: {:.2} seconds", *elapsed_time);
         }
     }
 }
