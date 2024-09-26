@@ -14,6 +14,7 @@ fn main() {
         .add_system(input::rotate_ship_on_click) // Add mouse click ship rotation system
         .add_system(input::check_end_point_reached) // Check if ship reaches end point
         .add_system(input::track_game_timer) // Track and print game timer
+        .add_system(system::update_timer_display) // Display the timer on the screen
         .add_system(input::detect_collision_and_reset) // Add collision detection and reset system
         .run();
 }

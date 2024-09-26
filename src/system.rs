@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use rand::Rng;
-use crate::component::{BoxEntity, BoxDirection, Ship, StartPoint, EndPoint};
+use crate::component::{BoxEntity, BoxDirection, Ship, StartPoint, EndPoint, GameTimer};
 
 // This system sets up the initial game entities, like the ship, start point, end point, and boxes.
 pub fn setup(
@@ -86,6 +86,33 @@ pub fn setup(
                 ..Default::default()
             }).insert(BoxEntity).insert(BoxDirection(direction));
         }
+
+        // Spawn the timer text on the screen
+        commands.spawn(TextBundle {
+            text: Text::from_section(
+                "Time: 0.0",
+                TextStyle {
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"), // Load your font here
+                    font_size: 50.0,
+                    color: Color::WHITE,
+                }
+            ),
+            style: Style {
+                position_type: PositionType::Absolute,
+                position: UiRect {
+                    top: Val::Px(20.0),
+                    left: Val::Px(20.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            transform: Transform {
+                translation: Vec3::new(0.0, 0.0, 10.0),  // Ensure the text is rendered on top
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(GameTimer(None, false)); // Add the timer component to this entity
     }
 }
 
@@ -137,5 +164,25 @@ pub fn box_movement(
     for ((mut transform, mut direction), (new_translation, new_direction)) in query.iter_mut().zip(box_data.iter()) {
         transform.translation = *new_translation;
         direction.0 = *new_direction;
+    }
+}
+
+// Update the visual timer
+pub fn update_timer_display(
+    time: Res<Time>,
+    mut timer: ResMut<GameTimer>,
+    mut query: Query<&mut Text>,
+) {
+    let timer_stopped = timer.1;  // Make a copy of `timer.1` (whether it's stopped or not)
+
+    if let Some(ref mut elapsed_time) = timer.0 {
+        if !timer_stopped {
+            *elapsed_time += time.delta_seconds();
+        }
+
+        // Update the text entity with the elapsed time
+        for mut text in query.iter_mut() {
+            text.sections[0].value = format!("Time: {:.2}", elapsed_time);
+        }
     }
 }

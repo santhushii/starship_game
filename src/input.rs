@@ -10,8 +10,6 @@ pub fn ship_movement(
     )>,
     time: Res<Time>,
     mut timer: ResMut<GameTimer>,
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
 ) {
     if let Ok(mut transform) = param_set.p0().get_single_mut() {
         let mut direction = Vec3::ZERO;
@@ -93,10 +91,8 @@ pub fn check_end_point_reached(
 
 // Track and display the game timer
 pub fn track_game_timer(time: Res<Time>, mut timer: ResMut<GameTimer>) {
-    // Take an immutable copy of timer.1 (whether the timer is stopped)
-    let timer_stopped = timer.1;
+    let timer_stopped = timer.1; // Make a copy of timer.1 (whether the timer is stopped)
 
-    // Now that we have taken the immutable borrow, we can mutably borrow timer.0
     if let Some(ref mut elapsed_time) = timer.0 {
         if !timer_stopped {
             *elapsed_time += time.delta_seconds();

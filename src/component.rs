@@ -33,5 +33,5 @@ pub struct ExplosionTimer(pub Option<f32>);
 pub struct RespawnTimer(pub Timer);
 
 // Game timer resource
-#[derive(Resource)]
+#[derive(Resource, Component)]  // Add `Component` to allow usage in Query
 pub struct GameTimer(pub Option<f32>, pub bool); // Option<f32>: elapsed time, bool: stop timer
