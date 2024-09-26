@@ -75,8 +75,6 @@ pub fn rotate_ship_on_click(
     }
 }
 
-// End the game when the ship reaches the end point
-// End the game when the ship reaches the end point
 pub fn check_end_point_reached(
     mut commands: Commands,
     mut query: Query<(Entity, &Transform), With<Ship>>,
@@ -88,6 +86,7 @@ pub fn check_end_point_reached(
         if let Ok(end_point_transform) = end_point_query.get_single() {
             let collision_distance = 30.0;
             if ship_transform.translation.distance(end_point_transform.translation) < collision_distance {
+                println!("Ship reached the end point!");  // Debug print
                 commands.entity(ship_entity).despawn(); // Despawn the ship
                 timer.1 = true; // Stop the timer
 
@@ -96,16 +95,16 @@ pub fn check_end_point_reached(
                     text: Text::from_section(
                         "Level One Complete",
                         TextStyle {
-                            font: asset_server.load("fonts/FiraSans-Bold.ttf"), // Ensure the font is available
-                            font_size: 60.0,
+                            font: asset_server.load("fonts/FiraSans-Bold.ttf"), // Ensure the font path is correct
+                            font_size: 50.0,  // A larger size for the end message
                             color: Color::GREEN,
                         }
                     ),
                     style: Style {
                         position_type: PositionType::Absolute,
                         position: UiRect {
-                            top: Val::Px(250.0),
-                            left: Val::Px(200.0),
+                            top: Val::Px(100.0),  // Adjust the vertical position (100 pixels from top)
+                            right: Val::Px(20.0), // Align to the right side (20 pixels from the right)
                             ..Default::default()
                         },
                         ..Default::default()
@@ -116,6 +115,8 @@ pub fn check_end_point_reached(
         }
     }
 }
+
+
 
 // Collision detection, handle ship lives, and spawn fireballs
 pub fn detect_collision_and_spawn_fireballs(
@@ -144,7 +145,7 @@ pub fn detect_collision_and_spawn_fireballs(
                             "Game Over",
                             TextStyle {
                                 font: asset_server.load("FiraSans-Bold.ttf"), // Correct path to the font
-                                font_size: 80.0,
+                                font_size: 50.0,
                                 color: Color::RED,
                             }
                         ),

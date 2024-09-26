@@ -104,31 +104,28 @@ pub fn setup(
         }
 
         // Spawn the timer text on the screen
-        commands.spawn(TextBundle {
-            text: Text::from_section(
-                "Time: 0.0",
-                TextStyle {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"), // Load your font here
-                    font_size: 50.0,
-                    color: Color::WHITE,
-                }
-            ),
-            style: Style {
-                position_type: PositionType::Absolute,
-                position: UiRect {
-                    top: Val::Px(20.0),
-                    left: Val::Px(20.0),
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            transform: Transform {
-                translation: Vec3::new(0.0, 0.0, 10.0),  // Ensure the text is rendered on top
-                ..Default::default()
-            },
+        // Spawn the timer text on the screen in system.rs
+commands.spawn(TextBundle {
+    text: Text::from_section(
+        "Time: 0.0 seconds",
+        TextStyle {
+            font: asset_server.load("fonts/FiraSans-Bold.ttf"), // Font path
+            font_size: 30.0,  // Make the font smaller for the timer
+            color: Color::WHITE,
+        }
+    ),
+    style: Style {
+        position_type: PositionType::Absolute,
+        position: UiRect {
+            top: Val::Px(20.0),   // Vertical position, 20 pixels from the top
+            right: Val::Px(20.0), // Horizontal position, 20 pixels from the right
             ..Default::default()
-        })
-        .insert(GameTimer(None, false)); // Add the timer component to this entity
+        },
+        ..Default::default()
+    },
+    ..Default::default()
+}).insert(GameTimer(None, false)); // Add the timer component
+
     }
 }
 
