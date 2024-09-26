@@ -36,11 +36,11 @@ pub fn setup(
             ..Default::default()
         }).insert(StartPoint);
 
-        // Spawn the ship exactly at the start point.
+        // Spawn the ship **exactly at the start point**.
         commands.spawn(SpriteBundle {
             texture: ship_handle.clone(),
             transform: Transform {
-                translation: start_point_position, // Start the ship at the same position as start point
+                translation: start_point_position, // Set the ship at the start point position
                 scale: Vec3::new(0.1, 0.1, 1.0),
                 rotation: Quat::from_rotation_z(0.0),
                 ..Default::default()
@@ -66,9 +66,25 @@ pub fn setup(
         // Spawn 10 moving boxes at random positions with random directions.
         let num_boxes = 10;
         let mut rng = rand::thread_rng();
+        let mut box_positions = vec![];
+
         for _ in 0..num_boxes {
-            let x = rng.gen_range(-half_width + margin..half_width - margin);
-            let y = rng.gen_range(-half_height + margin..half_height - margin);
+            let mut x;
+            let mut y;
+
+            // Avoid overlapping by generating new positions until there's no overlap
+            loop {
+                x = rng.gen_range(-half_width + margin..half_width - margin);
+                y = rng.gen_range(-half_height + margin..half_height - margin);
+
+                let new_position = Vec3::new(x, y, 0.0);
+                
+                // Ensure no overlap between boxes
+                if box_positions.iter().all(|pos: &Vec3| pos.distance(new_position) > 50.0) {
+                    box_positions.push(new_position);
+                    break;
+                }
+            }
 
             let direction = Vec3::new(
                 rng.gen_range(-1.0..1.0),
@@ -148,7 +164,7 @@ pub fn box_movement(
         new_positions.push(*translation); // Store the new position
     }
 
-    // Collision detection (handled in a separate loop after all movements)
+    // Collision detection between boxes
     for i in 0..box_data.len() {
         for j in (i + 1)..box_data.len() {
             if new_positions[i].distance(new_positions[j]) < 40.0 {

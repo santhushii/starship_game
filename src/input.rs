@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::component::{Ship, BoxEntity, StartPoint, EndPoint, GameTimer};
+use crate::component::{Ship, BoxEntity, StartPoint, EndPoint, GameTimer, Fireball};
 
 // Ship movement function with arrow keys and WASD support
 pub fn ship_movement(
@@ -101,12 +101,13 @@ pub fn track_game_timer(time: Res<Time>, mut timer: ResMut<GameTimer>) {
     }
 }
 
+// Collision detection, reset ship at start point, and spawn fireballs
 // Collision detection and reset ship at start point
-pub fn detect_collision_and_reset(
+pub fn detect_collision_and_spawn_fireballs(
     mut commands: Commands,
     mut ship_query: Query<(Entity, &Transform), With<Ship>>,
     box_query: Query<&Transform, With<BoxEntity>>,
-    start_point_query: Query<&Transform, With<StartPoint>>,
+    start_point_query: Query<&Transform, With<StartPoint>>, // Start point position for respawn
     asset_server: Res<AssetServer>,
 ) {
     if let Ok((ship_entity, ship_transform)) = ship_query.get_single_mut() {
@@ -117,19 +118,32 @@ pub fn detect_collision_and_reset(
                 commands.entity(ship_entity).despawn();
 
                 if let Ok(start_transform) = start_point_query.get_single() {
-                    let start_position = start_transform.translation;
+                    let start_position = start_transform.translation; // Fetch start point position
                     let ship_texture = asset_server.load("ship.png");
 
+                    // Respawn the ship at the start point
                     commands.spawn(SpriteBundle {
                         texture: ship_texture,
                         transform: Transform {
-                            translation: start_position,
+                            translation: start_position, // Reset to the start point position
                             scale: Vec3::new(0.1, 0.1, 1.0),
                             ..Default::default()
                         },
                         ..Default::default()
                     }).insert(Ship);
                 }
+
+                // Spawn a fireball at the collision location
+                let fireball_texture = asset_server.load("fireball.png");
+                commands.spawn(SpriteBundle {
+                    texture: fireball_texture,
+                    transform: Transform {
+                        translation: ship_transform.translation, // Spawn fireball where the collision happens
+                        scale: Vec3::new(0.1, 0.1, 1.0),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                }).insert(Fireball);
             }
         }
     }
