@@ -9,6 +9,7 @@ pub fn ship_movement(
         Query<&Transform, With<StartPoint>>,
     )>,
     time: Res<Time>,
+    windows: Query<&Window>, // Access the window dimensions using Query
     mut timer: ResMut<GameTimer>,
 ) {
     if let Ok(mut transform) = param_set.p0().get_single_mut() {
@@ -40,19 +41,24 @@ pub fn ship_movement(
         let speed = 200.0;
         transform.translation += direction.normalize_or_zero() * speed * time.delta_seconds();
 
-        // Boundary clamping to keep the ship within the window
-        let half_width = 400.0; // Assume fixed window width
-        let half_height = 300.0; // Assume fixed window height
+        // Get the primary window to dynamically determine the screen dimensions
+        if let Ok(window) = windows.get_single() {
+            let half_width = window.width() / 2.0;
+            let half_height = window.height() / 2.0;
 
-        let min_x = -half_width + 60.0;
-        let max_x = half_width - 60.0;
-        let min_y = -half_height + 60.0;
-        let max_y = half_height - 60.0;
+            // Set boundary clamping to allow the ship to move across the entire window
+            let min_x = -half_width;
+            let max_x = half_width;
+            let min_y = -half_height;
+            let max_y = half_height;
 
-        transform.translation.x = transform.translation.x.clamp(min_x, max_x);
-        transform.translation.y = transform.translation.y.clamp(min_y, max_y);
+            // Clamp the starship's position within the screen bounds
+            transform.translation.x = transform.translation.x.clamp(min_x, max_x);
+            transform.translation.y = transform.translation.y.clamp(min_y, max_y);
+        }
     }
 }
+
 
 // Rotate ship in 4 directions based on mouse click
 pub fn rotate_ship_on_click(
