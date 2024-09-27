@@ -31,3 +31,7 @@ pub struct GameTimer(pub Option<f32>, pub bool); // Option<f32>: elapsed time, b
 // Lives resource for tracking starship's lives
 #[derive(Resource, Component)]
 pub struct ShipLives(pub u32); // Track the number of remaining lives
+
+#[derive(Component)]
+pub struct Laser;
+
