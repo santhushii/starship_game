@@ -223,20 +223,3 @@ pub fn shoot_laser(
         }
     }
 }
-pub fn detect_laser_collision(
-    mut commands: Commands,
-    laser_query: Query<(Entity, &Transform), With<Laser>>,
-    box_query: Query<(Entity, &Transform), With<BoxEntity>>,
-) {
-    for (laser_entity, laser_transform) in laser_query.iter() {
-        for (box_entity, box_transform) in box_query.iter() {
-            let collision_distance = 30.0;
-            if laser_transform.translation.distance(box_transform.translation) < collision_distance {
-                // Despawn both the laser and the box
-                commands.entity(laser_entity).despawn();
-                commands.entity(box_entity).despawn();
-                break;
-            }
-        }
-    }
-}

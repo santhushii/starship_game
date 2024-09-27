@@ -13,6 +13,9 @@ fn main() {
         .add_system(system::box_movement) // Add box movement system
         .add_system(input::ship_movement) // Add ship movement system
         .add_system(input::rotate_ship_on_click) // Add mouse click ship rotation system
+        .add_system(input::shoot_laser) // Add laser shooting system
+        .add_system(system::move_laser) // Add laser movement system
+        .add_system(system::detect_laser_collision) // Add laser-box collision system
         .add_system(input::check_end_point_reached) // Check if ship reaches end point
         .add_system(system::update_timer_display) // Display the timer on the screen
         .add_system(input::detect_collision_and_spawn_fireballs) // Add collision detection and fireball system
