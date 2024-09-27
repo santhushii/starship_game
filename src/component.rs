@@ -35,3 +35,6 @@ pub struct ShipLives(pub u32); // Track the number of remaining lives
 #[derive(Component)]
 pub struct Laser;
 
+#[derive(Resource)]
+pub struct FireballAtlas(Handle<TextureAtlas>);
+
