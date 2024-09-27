@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use rand::Rng;
-use crate::component::{BoxEntity, BoxDirection, Ship, StartPoint, EndPoint, GameTimer, ShipLives};
+use crate::component::{BoxDirection, BoxEntity, EndPoint, GameTimer, Laser, Ship, ShipLives, StartPoint};
 
 // This system sets up the initial game entities, like the ship, start point, end point, and boxes.
 pub fn setup(
@@ -196,6 +196,22 @@ pub fn update_timer_display(
         // Update the text entity with the elapsed time
         for mut text in query.iter_mut() {
             text.sections[0].value = format!("Time: {:.2} seconds", *elapsed_time);
+        }
+    }
+}
+pub fn move_laser(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut laser_query: Query<(Entity, &mut Transform), With<Laser>>,
+) {
+    let laser_speed = 300.0;
+
+    for (laser_entity, mut transform) in laser_query.iter_mut() {
+        transform.translation.y += laser_speed * time.delta_seconds();
+
+        // Despawn laser if it goes out of bounds
+        if transform.translation.y > 400.0 {
+            commands.entity(laser_entity).despawn();
         }
     }
 }
