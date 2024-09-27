@@ -183,7 +183,7 @@ pub fn detect_collision_and_spawn_fireballs(
                 }
 
                 // Spawn a fireball at the collision location
-                let fireball_texture = asset_server.load("explo_a_sheet.png");  // Corrected path
+                let fireball_texture = asset_server.load("fireball.png");  // Corrected path
 
                 commands.spawn(SpriteBundle {
                     texture: fireball_texture,
