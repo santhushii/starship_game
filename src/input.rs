@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::component::{Ship, BoxEntity, StartPoint, EndPoint, GameTimer, ShipLives, Fireball};
+use crate::component::{BoxEntity, EndPoint, Fireball, GameTimer, Laser, Ship, ShipLives, StartPoint};
 
 // Ship movement function with arrow keys and WASD support
 pub fn ship_movement(
@@ -195,6 +195,31 @@ pub fn detect_collision_and_spawn_fireballs(
                     ..Default::default()
                 }).insert(Fireball);
             }
+        }
+    }
+}
+pub fn shoot_laser(
+    mut commands: Commands,
+    mouse_button_input: Res<Input<MouseButton>>,
+    ship_query: Query<&Transform, With<Ship>>,
+    asset_server: Res<AssetServer>,
+) {
+    if mouse_button_input.just_pressed(MouseButton::Left) {
+        if let Ok(ship_transform) = ship_query.get_single() {
+            let laser_texture = asset_server.load("laser_a_01.png");
+            let laser_position = ship_transform.translation;
+
+            // Spawn the laser at the ship's position
+            commands.spawn(SpriteBundle {
+                texture: laser_texture,
+                transform: Transform {
+                    translation: laser_position,
+                    scale: Vec3::new(0.1, 0.1, 1.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+            .insert(Laser);
         }
     }
 }
