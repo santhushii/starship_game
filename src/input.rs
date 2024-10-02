@@ -1,5 +1,11 @@
 use bevy::prelude::*;
-use crate::component::{BoxEntity, EndPoint, GameTimer, Laser, Ship, ShipLives, StartPoint, Fireball};
+use crate::component::{BoxEntity, EndPoint, GameTimer, Laser, LaserType, Ship, ShipLives, StartPoint};
+
+// Add a resource to track which laser type to shoot
+#[derive(Resource, Default)]
+pub struct LaserTypeTracker {
+    pub shoot_a: bool, // True if `laser_a_01.png` is to be shot, False for `laser_b_01.png`
+}
 
 // 1. **Ship Movement and Rotation:**
 pub fn ship_movement(
@@ -71,21 +77,33 @@ pub fn shoot_laser(
     keyboard_input: Res<Input<KeyCode>>,
     ship_query: Query<&Transform, With<Ship>>,
     asset_server: Res<AssetServer>,
+    mut laser_tracker: ResMut<LaserTypeTracker>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Space) {
         if let Ok(ship_transform) = ship_query.get_single() {
-            let laser_texture = asset_server.load("laser_a_01.png");
+            // Alternate between laser_a_01.png and laser_b_01.png
+            let laser_texture = if laser_tracker.shoot_a {
+                asset_server.load("laser_a_01.png")
+            } else {
+                asset_server.load("laser_b_01.png")
+            };
             let laser_position = ship_transform.translation;
 
             commands.spawn(SpriteBundle {
                 texture: laser_texture,
                 transform: Transform {
                     translation: laser_position,
-                    scale: Vec3::new(0.1, 0.1, 1.0),
+                    scale: Vec3::new(0.3, 0.3, 1.0), // Adjusted laser size
                     ..Default::default()
                 },
                 ..Default::default()
-            }).insert(Laser);
+            })
+            .insert(Laser {
+                laser_type: if laser_tracker.shoot_a { LaserType::A } else { LaserType::B },
+            });
+
+            // Toggle the laser type for the next shot
+            laser_tracker.shoot_a = !laser_tracker.shoot_a;
         }
     }
 }
@@ -127,62 +145,6 @@ pub fn check_end_point_reached(
                     },
                     ..Default::default()
                 });
-            }
-        }
-    }
-}
-
-// **5. Detect collision between ship and box, spawn fireballs:**
-pub fn detect_collision_and_spawn_fireballs(
-    mut commands: Commands,
-    mut ship_query: Query<(Entity, &Transform), With<Ship>>,
-    box_query: Query<&Transform, With<BoxEntity>>,
-    start_point_query: Query<&Transform, With<StartPoint>>,
-    asset_server: Res<AssetServer>,
-    mut lives: ResMut<ShipLives>,
-) {
-    if let Ok((ship_entity, ship_transform)) = ship_query.get_single_mut() {
-        for box_transform in box_query.iter() {
-            let collision_distance = 30.0;
-            if ship_transform.translation.distance(box_transform.translation) < collision_distance {
-                lives.0 -= 1;
-                println!("Lives left: {}", lives.0);
-
-                if lives.0 == 0 {
-                    println!("Game Over! No lives left.");
-                    commands.entity(ship_entity).despawn();
-                    return;
-                }
-
-                // Respawn the ship at the start point
-                commands.entity(ship_entity).despawn();
-
-                if let Ok(start_transform) = start_point_query.get_single() {
-                    let start_position = start_transform.translation;
-                    let ship_texture = asset_server.load("ship.png");
-
-                    commands.spawn(SpriteBundle {
-                        texture: ship_texture,
-                        transform: Transform {
-                            translation: start_position,
-                            scale: Vec3::new(0.1, 0.1, 1.0),
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    }).insert(Ship);
-                }
-
-                // Spawn fireball after collision
-                let fireball_texture = asset_server.load("fireball.png");
-                commands.spawn(SpriteBundle {
-                    texture: fireball_texture,
-                    transform: Transform {
-                        translation: ship_transform.translation,
-                        scale: Vec3::new(0.1, 0.1, 1.0),
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                }).insert(Fireball);
             }
         }
     }

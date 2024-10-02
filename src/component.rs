@@ -32,9 +32,16 @@ pub struct GameTimer(pub Option<f32>, pub bool);
 #[derive(Resource, Component)]
 pub struct ShipLives(pub u32);
 
-// Laser component
+// **Laser component** with an enum to distinguish between two laser types
 #[derive(Component)]
-pub struct Laser;
+pub struct Laser {
+    pub laser_type: LaserType,
+}
+
+pub enum LaserType {
+    A, // Corresponds to `laser_a_01.png`
+    B, // Corresponds to `laser_b_01.png`
+}
 
 // Fireball sprite atlas for explosion
 #[derive(Resource)]

@@ -1,14 +1,13 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use crate::component::{BoxDirection, BoxEntity, EndPoint, GameTimer, Laser, Ship, StartPoint, FireballAnimationTimer};
+use crate::component::{BoxDirection, BoxEntity, EndPoint, Laser, Ship, StartPoint, FireballAnimationTimer};
 use rand::Rng;
 
-// **1. Setup initial entities:**
+// **1. Setup entities:**
 pub fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     windows: Query<&Window, With<PrimaryWindow>>,
-    _texture_atlases: ResMut<Assets<TextureAtlas>>, // Prefixing with _ to suppress warnings
 ) {
     commands.spawn(Camera2dBundle::default());
 
@@ -140,40 +139,40 @@ pub fn move_laser(
 // **4. Detect laser-box collision system and handle box destruction:**
 pub fn detect_laser_collision(
     mut commands: Commands,
-    laser_query: Query<(Entity, &Transform), With<Laser>>,
+    laser_query: Query<(Entity, &Transform, &Laser), With<Laser>>,
     box_query: Query<(Entity, &Transform), With<BoxEntity>>,
     asset_server: Res<AssetServer>,
 ) {
-    for (laser_entity, laser_transform) in laser_query.iter() {
+    for (laser_entity, laser_transform, _laser) in laser_query.iter() {
         for (box_entity, box_transform) in box_query.iter() {
             let collision_distance = 30.0;
             if laser_transform.translation.distance(box_transform.translation) < collision_distance {
-                // Destroy laser
+                // Destroy both laser and box
                 commands.entity(laser_entity).despawn();
+                commands.entity(box_entity).despawn();
 
-                // Play box destruction animation
-                let explosion_texture = asset_server.load("explosion.png");
+                // Play box destruction animation (explosion)
+                let explosion_texture = asset_server.load("fireball.png");
                 commands.spawn(SpriteBundle {
                     texture: explosion_texture,
                     transform: Transform {
                         translation: box_transform.translation,
-                        scale: Vec3::new(0.2, 0.2, 1.0),
+                        scale: Vec3::new(0.5, 0.5, 1.0), // Adjusted explosion size
                         ..Default::default()
                     },
                     ..Default::default()
                 })
-                .insert(BoxEntity) // Reuse the same component for animation
-                .insert(FireballAnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating))); // Fixed type error
+                .insert(BoxEntity) // Reuse BoxEntity for the animation
+                .insert(FireballAnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)));
 
-                // Destroy the box after the animation
-                commands.entity(box_entity).despawn();
+                break; // Exit loop after one collision
             }
         }
     }
 }
 
-// **5. Fireball animation system (for box destruction):**
-pub fn animate_box_destruction(
+// **5. Animate Fireball System:**
+pub fn animate_fireball(
     time: Res<Time>,
     mut commands: Commands,
     mut fireball_query: Query<(Entity, &mut FireballAnimationTimer, &mut TextureAtlasSprite), With<BoxEntity>>,
@@ -183,27 +182,8 @@ pub fn animate_box_destruction(
         if animation_timer.0.finished() {
             sprite.index += 1;
             if sprite.index >= 16 {
-                commands.entity(entity).despawn(); // Despawn the fireball animation after it finishes
+                commands.entity(entity).despawn(); // Despawn fireball after animation completes
             }
-        }
-    }
-}
-
-// **6. Update game timer display:**
-pub fn update_timer_display(
-    time: Res<Time>,
-    mut timer: ResMut<GameTimer>,
-    mut query: Query<&mut Text>,
-) {
-    let timer_stopped = timer.1;  // Check if the timer is stopped
-
-    if let Some(ref mut elapsed_time) = timer.0 {
-        if !timer_stopped {
-            *elapsed_time += time.delta_seconds();
-        }
-
-        for mut text in query.iter_mut() {
-            text.sections[0].value = format!("Time: {:.2} seconds", *elapsed_time);
         }
     }
 }
