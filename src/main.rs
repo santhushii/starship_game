@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use system::update_timer_display;
+
 
 mod component;
 mod system;
@@ -18,6 +20,7 @@ fn main() {
         .add_system(system::detect_laser_collision) // Add laser-box collision system
         .add_system(input::check_end_point_reached) // Check if ship reaches end point
         .add_system(system::update_timer_display) // Display the timer on the screen
+        .add_system(system::animate_fireball) // Add fireball animation system
         .add_system(input::detect_collision_and_spawn_fireballs) // Add collision detection and fireball system
         .run();
 }

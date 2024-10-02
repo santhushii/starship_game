@@ -1,7 +1,9 @@
 use bevy::prelude::*;
-use crate::component::{BoxEntity, EndPoint, Fireball, GameTimer, Laser, Ship, ShipLives, StartPoint};
+use crate::component::{BoxEntity, EndPoint, GameTimer, Laser, Ship, ShipLives, StartPoint};
+use crate::component::Fireball;
 
-// Ship movement function with arrow keys and WASD support
+
+// Ship movement function with arrow keys
 pub fn ship_movement(
     keyboard_input: Res<Input<KeyCode>>,
     mut param_set: ParamSet<(
@@ -16,10 +18,12 @@ pub fn ship_movement(
         let mut direction = Vec3::ZERO;
 
         // Start the game timer when the player presses a movement key
-        if timer.0.is_none() && (keyboard_input.pressed(KeyCode::Up) || keyboard_input.pressed(KeyCode::W) ||
-            keyboard_input.pressed(KeyCode::Down) || keyboard_input.pressed(KeyCode::S) ||
-            keyboard_input.pressed(KeyCode::Left) || keyboard_input.pressed(KeyCode::A) ||
-            keyboard_input.pressed(KeyCode::Right) || keyboard_input.pressed(KeyCode::D)) {
+        if timer.0.is_none() 
+            && (keyboard_input.pressed(KeyCode::Up) || keyboard_input.pressed(KeyCode::W)
+            || keyboard_input.pressed(KeyCode::Down) || keyboard_input.pressed(KeyCode::S)
+            || keyboard_input.pressed(KeyCode::Left) || keyboard_input.pressed(KeyCode::A)
+            || keyboard_input.pressed(KeyCode::Right) || keyboard_input.pressed(KeyCode::D)) 
+        {
             timer.0 = Some(0.0);
         }
 
@@ -59,6 +63,7 @@ pub fn ship_movement(
     }
 }
 
+
 // Rotate ship in 4 directions based on mouse click
 pub fn rotate_ship_on_click(
     mut ship_query: Query<&mut Transform, With<Ship>>,
@@ -67,84 +72,36 @@ pub fn rotate_ship_on_click(
     if let Ok(mut transform) = ship_query.get_single_mut() {
         if mouse_button_input.just_pressed(MouseButton::Left) {
             let current_rotation = transform.rotation.to_euler(EulerRot::XYZ).2;
-
-            // Rotate the ship by 90 degrees (FRAC_PI_2 is π/2, or 90 degrees in radians)
             let new_rotation = current_rotation + std::f32::consts::FRAC_PI_2;
             transform.rotation = Quat::from_rotation_z(new_rotation);
         }
     }
 }
 
-pub fn check_end_point_reached(
-    mut commands: Commands,
-    mut query: Query<(Entity, &Transform), With<Ship>>,
-    end_point_query: Query<&Transform, With<EndPoint>>,
-    mut timer: ResMut<GameTimer>,
-    asset_server: Res<AssetServer>, // Add asset server to load fonts for text
-) {
-    if let Ok((ship_entity, ship_transform)) = query.get_single_mut() {
-        if let Ok(end_point_transform) = end_point_query.get_single() {
-            let collision_distance = 30.0;
-            if ship_transform.translation.distance(end_point_transform.translation) < collision_distance {
-                println!("Ship reached the end point!");  // Debug print
-                commands.entity(ship_entity).despawn(); // Despawn the ship
-                timer.1 = true; // Stop the timer
-
-                // Display "Level One Complete" on the screen
-                commands.spawn(TextBundle {
-                    text: Text::from_section(
-                        "Level One Complete",
-                        TextStyle {
-                            font: asset_server.load("fonts/FiraSans-Bold.ttf"), // Ensure the font path is correct
-                            font_size: 50.0,  // A larger size for the end message
-                            color: Color::GREEN,
-                        }
-                    ),
-                    style: Style {
-                        position_type: PositionType::Absolute,
-                        position: UiRect {
-                            top: Val::Px(100.0),  // Adjust the vertical position (100 pixels from top)
-                            right: Val::Px(20.0), // Align to the right side (20 pixels from the right)
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                });
-            }
-        }
-    }
-}
-
-
-
-// Collision detection, handle ship lives, and spawn fireballs
+// Detect collision between ship and boxes, spawn fireball
 pub fn detect_collision_and_spawn_fireballs(
     mut commands: Commands,
     mut ship_query: Query<(Entity, &Transform), With<Ship>>,
     box_query: Query<&Transform, With<BoxEntity>>,
-    start_point_query: Query<&Transform, With<StartPoint>>, // Start point position for respawn
-    asset_server: Res<AssetServer>, // Add asset server to load fonts for text
-    mut lives: ResMut<ShipLives>, // Track the remaining lives
+    start_point_query: Query<&Transform, With<StartPoint>>,
+    asset_server: Res<AssetServer>,
+    mut lives: ResMut<ShipLives>,
 ) {
     if let Ok((ship_entity, ship_transform)) = ship_query.get_single_mut() {
         for box_transform in box_query.iter() {
             let collision_distance = 30.0;
             if ship_transform.translation.distance(box_transform.translation) < collision_distance {
-                // Reduce lives and check if game over
                 lives.0 -= 1;
                 println!("Lives left: {}", lives.0);
 
                 if lives.0 == 0 {
                     println!("Game Over! No lives left.");
-                    commands.entity(ship_entity).despawn(); // Despawn the ship
-
-                    // Display "Game Over" on the screen
+                    commands.entity(ship_entity).despawn();
                     commands.spawn(TextBundle {
                         text: Text::from_section(
                             "Game Over",
                             TextStyle {
-                                font: asset_server.load("FiraSans-Bold.ttf"), // Correct path to the font
+                                font: asset_server.load("FiraSans-Bold.ttf"),
                                 font_size: 50.0,
                                 color: Color::RED,
                             }
@@ -160,21 +117,20 @@ pub fn detect_collision_and_spawn_fireballs(
                         },
                         ..Default::default()
                     });
-                    return; // End game, no respawn
+                    return;
                 }
 
-                // Despawn the current ship and reset it at the starting point
+                // Respawn ship at start point
                 commands.entity(ship_entity).despawn();
 
                 if let Ok(start_transform) = start_point_query.get_single() {
-                    let start_position = start_transform.translation; // Fetch start point position
+                    let start_position = start_transform.translation;
                     let ship_texture = asset_server.load("ship.png");
 
-                    // Respawn the ship at the start point
                     commands.spawn(SpriteBundle {
                         texture: ship_texture,
                         transform: Transform {
-                            translation: start_position, // Reset to the start point position
+                            translation: start_position,
                             scale: Vec3::new(0.1, 0.1, 1.0),
                             ..Default::default()
                         },
@@ -182,13 +138,12 @@ pub fn detect_collision_and_spawn_fireballs(
                     }).insert(Ship);
                 }
 
-                // Spawn a fireball at the collision location
-                let fireball_texture = asset_server.load("fireball.png");  // Corrected path
-
+                // Spawn fireball at collision location
+                let fireball_texture = asset_server.load("fireball.png");
                 commands.spawn(SpriteBundle {
                     texture: fireball_texture,
                     transform: Transform {
-                        translation: ship_transform.translation, // Spawn fireball where the collision happens
+                        translation: ship_transform.translation,
                         scale: Vec3::new(0.1, 0.1, 1.0),
                         ..Default::default()
                     },
@@ -198,6 +153,8 @@ pub fn detect_collision_and_spawn_fireballs(
         }
     }
 }
+
+// Shoot laser system
 pub fn shoot_laser(
     mut commands: Commands,
     mouse_button_input: Res<Input<MouseButton>>,
@@ -209,7 +166,6 @@ pub fn shoot_laser(
             let laser_texture = asset_server.load("laser_a_01.png");
             let laser_position = ship_transform.translation;
 
-            // Spawn the laser at the ship's position
             commands.spawn(SpriteBundle {
                 texture: laser_texture,
                 transform: Transform {
@@ -218,8 +174,48 @@ pub fn shoot_laser(
                     ..Default::default()
                 },
                 ..Default::default()
-            })
-            .insert(Laser);
+            }).insert(Laser);
+        }
+    }
+}
+
+// Check if ship reaches end point
+pub fn check_end_point_reached(
+    mut commands: Commands,
+    mut query: Query<(Entity, &Transform), With<Ship>>,
+    end_point_query: Query<&Transform, With<EndPoint>>,
+    mut timer: ResMut<GameTimer>,
+    asset_server: Res<AssetServer>,
+) {
+    if let Ok((ship_entity, ship_transform)) = query.get_single_mut() {
+        if let Ok(end_point_transform) = end_point_query.get_single() {
+            let collision_distance = 30.0;
+            if ship_transform.translation.distance(end_point_transform.translation) < collision_distance {
+                println!("Ship reached the end point!");
+                commands.entity(ship_entity).despawn();
+                timer.1 = true;
+
+                commands.spawn(TextBundle {
+                    text: Text::from_section(
+                        "Level One Complete",
+                        TextStyle {
+                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                            font_size: 50.0,
+                            color: Color::GREEN,
+                        }
+                    ),
+                    style: Style {
+                        position_type: PositionType::Absolute,
+                        position: UiRect {
+                            top: Val::Px(100.0),
+                            right: Val::Px(20.0),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                });
+            }
         }
     }
 }

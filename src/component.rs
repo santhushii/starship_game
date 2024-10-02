@@ -32,9 +32,16 @@ pub struct GameTimer(pub Option<f32>, pub bool); // Option<f32>: elapsed time, b
 #[derive(Resource, Component)]
 pub struct ShipLives(pub u32); // Track the number of remaining lives
 
+// Laser component
 #[derive(Component)]
 pub struct Laser;
 
+// Fireball animation
 #[derive(Resource)]
-pub struct FireballAtlas(Handle<TextureAtlas>);
+pub struct FireballAtlas(pub Handle<TextureAtlas>);
+
+#[derive(Component)]
+pub struct FireballAnimationTimer(pub Timer);
+
+
 
