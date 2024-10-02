@@ -1,47 +1,45 @@
 use bevy::prelude::*;
 
-// Ship component
+// Starship component
 #[derive(Component)]
 pub struct Ship;
 
-// BoxEntity component
+// Box entity component
 #[derive(Component)]
 pub struct BoxEntity;
 
-// BoxDirection component for box movement direction
+// Box movement direction component
 #[derive(Component)]
 pub struct BoxDirection(pub Vec3);
 
-// Fireball component
+// Fireball component (for destruction animation)
 #[derive(Component)]
 pub struct Fireball;
 
-// StartPoint component for game start point
+// Start point component
 #[derive(Component)]
 pub struct StartPoint;
 
-// EndPoint component for game end point
+// End point component
 #[derive(Component)]
 pub struct EndPoint;
 
 // Game timer resource
 #[derive(Resource, Component)]
-pub struct GameTimer(pub Option<f32>, pub bool); // Option<f32>: elapsed time, bool: stop timer
+pub struct GameTimer(pub Option<f32>, pub bool);
 
-// Lives resource for tracking starship's lives
+// Starship lives resource
 #[derive(Resource, Component)]
-pub struct ShipLives(pub u32); // Track the number of remaining lives
+pub struct ShipLives(pub u32);
 
 // Laser component
 #[derive(Component)]
 pub struct Laser;
 
-// Fireball animation
+// Fireball sprite atlas for explosion
 #[derive(Resource)]
 pub struct FireballAtlas(pub Handle<TextureAtlas>);
 
+// Fireball animation timer
 #[derive(Component)]
 pub struct FireballAnimationTimer(pub Timer);
-
-
-
