@@ -209,21 +209,36 @@ pub fn move_laser(
     }
 }
 
-// System to detect laser and box collision
+// System to detect laser and box collision and update score accordingly
 pub fn detect_laser_collision(
     mut commands: Commands,
     laser_query: Query<(Entity, &Transform), With<Laser>>,
-    box_query: Query<(Entity, &Transform), With<BoxEntity>>,
+    mut box_query: Query<(Entity, &Transform), With<BoxEntity>>,
+    mut score_display_query: Query<&mut Text, With<ScoreDisplay>>, // Query for the score display
+    mut score: ResMut<Score>, // Access to the Score resource
 ) {
+    let mut boxes_destroyed = 0; // Track the number of boxes destroyed in this iteration
+
     for (laser_entity, laser_transform) in laser_query.iter() {
-        for (box_entity, box_transform) in box_query.iter() {
+        for (box_entity, box_transform) in box_query.iter_mut() {
             let collision_distance = 30.0;
             if laser_transform.translation.distance(box_transform.translation) < collision_distance {
                 // Despawn both laser and box
                 commands.entity(laser_entity).despawn();
                 commands.entity(box_entity).despawn();
+                boxes_destroyed += 1; // Increment the count of destroyed boxes
                 break;
             }
+        }
+    }
+
+    if boxes_destroyed > 0 {
+        // Update the score based on the number of boxes destroyed
+        score.0 += boxes_destroyed;
+
+        // Update the score display text
+        if let Ok(mut score_text) = score_display_query.get_single_mut() {
+            score_text.sections[0].value = format!("Score: {}", score.0);
         }
     }
 }
@@ -265,12 +280,11 @@ pub fn update_timer_display(
     }
 }
 
-
 // System to detect starship-box collisions and handle game logic
 pub fn detect_starship_box_collision(
     mut commands: Commands,
     mut ship_query: Query<(Entity, &Transform, &mut ShipLives), With<Ship>>,
-    box_query: Query<&Transform, With<BoxEntity>>,
+    mut box_query: Query<(Entity, &Transform), With<BoxEntity>>, // Update to retrieve box entities
     fireball_atlas: Res<FireballAtlas>,
     asset_server: Res<AssetServer>,
     mut text_query: ParamSet<(Query<&mut Text, With<ShipLivesDisplay>>, Query<&mut Text, With<ScoreDisplay>>)>, // Use ParamSet for disjoint queries
@@ -279,12 +293,15 @@ pub fn detect_starship_box_collision(
 ) {
     if let Ok((ship_entity, ship_transform, mut lives)) = ship_query.get_single_mut() {
         let ship_position = ship_transform.translation;
-        let mut collided = false;
+        let mut collided_boxes = 0; // Track the number of boxes collided with the starship
 
-        for box_transform in box_query.iter() {
+        for (box_entity, box_transform) in box_query.iter_mut() {
             let collision_distance = 30.0;
             if ship_position.distance(box_transform.translation) < collision_distance {
-                collided = true;
+                collided_boxes += 1; // Increment the count of collided boxes
+
+                // Despawn the box after collision
+                commands.entity(box_entity).despawn();
 
                 // Spawn fireball at the collision point
                 commands.spawn(SpriteSheetBundle {
@@ -298,12 +315,10 @@ pub fn detect_starship_box_collision(
                 })
                 .insert(Fireball)
                 .insert(FireballAnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)));
-
-                break;
             }
         }
 
-        if collided {
+        if collided_boxes > 0 {
             // Reduce ship lives
             lives.0 -= 1;
 
@@ -312,8 +327,8 @@ pub fn detect_starship_box_collision(
                 lives_text.sections[0].value = format!("Lives: {}\nTime: 0.00 seconds", lives.0);
             }
 
-            // Increase score when the starship is destroyed
-            score.0 += 1;
+            // Increase score based on the number of boxes destroyed
+            score.0 += collided_boxes; // Update the score based on the number of boxes collided
             if let Ok(mut score_text) = text_query.p1().get_single_mut() {
                 score_text.sections[0].value = format!("Score: {}", score.0);
             }
@@ -363,6 +378,7 @@ pub fn detect_starship_box_collision(
         }
     }
 }
+
 // System to handle shooting lasers from the starship's tip
 pub fn shoot_laser(
     mut commands: Commands,
