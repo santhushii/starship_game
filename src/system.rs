@@ -6,10 +6,12 @@ use crate::component::{
 use rand::Rng;
 use crate::component::LaserType;
 
+use crate::component::{Score, ScoreDisplay};
+use bevy::ecs::system::ParamSet;
+
 // Marker component for the text displaying lives and timer
 #[derive(Component)]
 pub struct ShipLivesDisplay;
-
 // System to set up initial entities
 pub fn setup(
     mut commands: Commands,
@@ -18,6 +20,29 @@ pub fn setup(
 ) {
     // Spawn 2D camera
     commands.spawn(Camera2dBundle::default());
+
+    // Initialize the score to zero
+    commands.insert_resource(Score(0));
+
+    // Display the initial score on the screen
+    commands.spawn(TextBundle {
+        text: Text::from_section(
+            "Score: 0",
+            TextStyle {
+                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                font_size: 30.0,
+                color: Color::WHITE,
+            },
+        ),
+        style: Style {
+            position_type: PositionType::Absolute,
+            top: Val::Px(10.0),
+            right: Val::Px(10.0),
+            ..Default::default()
+        },
+        ..Default::default()
+    })
+    .insert(ScoreDisplay);
 
     // Load textures
     let ship_handle = asset_server.load("ship.png");
@@ -77,8 +102,6 @@ pub fn setup(
                 color: Color::WHITE,
             },
         ),
-        
-        
         style: Style {
             position_type: PositionType::Absolute,
             top: Val::Px(10.0),
@@ -250,7 +273,8 @@ pub fn detect_starship_box_collision(
     box_query: Query<&Transform, With<BoxEntity>>,
     fireball_atlas: Res<FireballAtlas>,
     asset_server: Res<AssetServer>,
-    mut lives_display_query: Query<&mut Text, With<ShipLivesDisplay>>, // Display for lives and timer
+    mut text_query: ParamSet<(Query<&mut Text, With<ShipLivesDisplay>>, Query<&mut Text, With<ScoreDisplay>>)>, // Use ParamSet for disjoint queries
+    mut score: ResMut<Score>, // Access to the Score resource
     mut game_timer: ResMut<GameTimer>, // Access to the game timer
 ) {
     if let Ok((ship_entity, ship_transform, mut lives)) = ship_query.get_single_mut() {
@@ -284,8 +308,14 @@ pub fn detect_starship_box_collision(
             lives.0 -= 1;
 
             // Update lives display
-            if let Ok(mut lives_text) = lives_display_query.get_single_mut() {
+            if let Ok(mut lives_text) = text_query.p0().get_single_mut() {
                 lives_text.sections[0].value = format!("Lives: {}\nTime: 0.00 seconds", lives.0);
+            }
+
+            // Increase score when the starship is destroyed
+            score.0 += 1;
+            if let Ok(mut score_text) = text_query.p1().get_single_mut() {
+                score_text.sections[0].value = format!("Score: {}", score.0);
             }
 
             // Check if lives are zero to end the game
@@ -333,7 +363,6 @@ pub fn detect_starship_box_collision(
         }
     }
 }
-
 // System to handle shooting lasers from the starship's tip
 pub fn shoot_laser(
     mut commands: Commands,

@@ -59,3 +59,9 @@ pub struct LivesText;
 
 #[derive(Component)]
 pub struct ShipLivesDisplay;
+#[derive(Component)]
+pub struct ScoreDisplay;
+
+// Component to track the player's score
+#[derive(Default, Resource)]
+pub struct Score(pub i32);
