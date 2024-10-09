@@ -106,21 +106,51 @@ pub fn setup(
     });
 }
 
-// System to handle box movement
+// System to handle box movement (no ship interaction)
 pub fn box_movement(
     time: Res<Time>,
-    mut query: Query<(&mut Transform, &BoxDirection), With<BoxEntity>>,
+    mut box_query: Query<(&mut Transform, &BoxDirection), With<BoxEntity>>,
 ) {
     let speed = 100.0;
-    for (mut transform, direction) in query.iter_mut() {
-        transform.translation += direction.0 * speed * time.delta_seconds();
+
+    for (mut box_transform, direction) in box_query.iter_mut() {
+        box_transform.translation += direction.0 * speed * time.delta_seconds();
 
         // Wrap around screen edges
-        if transform.translation.x > 400.0 || transform.translation.x < -400.0 {
-            transform.translation.x = -transform.translation.x;
+        if box_transform.translation.x > 400.0 || box_transform.translation.x < -400.0 {
+            box_transform.translation.x = -box_transform.translation.x;
         }
-        if transform.translation.y > 300.0 || transform.translation.y < -300.0 {
-            transform.translation.y = -transform.translation.y;
+        if box_transform.translation.y > 300.0 || box_transform.translation.y < -300.0 {
+            box_transform.translation.y = -box_transform.translation.y;
+        }
+    }
+}
+// System to handle box and ship collision, and spawn fireballs when they collide
+pub fn box_ship_collision(
+    mut commands: Commands,
+    box_query: Query<&Transform, With<BoxEntity>>,
+    ship_query: Query<&Transform, With<Ship>>,
+    fireball_atlas: Res<FireballAtlas>,
+) {
+    if let Ok(ship_transform) = ship_query.get_single() {
+        for box_transform in box_query.iter() {
+            let collision_distance = 30.0; // Adjust this value to match the size of the box and ship
+            if box_transform.translation.distance(ship_transform.translation) < collision_distance {
+                // Release fireball when a box collides with the ship
+                commands.spawn(SpriteSheetBundle {
+                    texture_atlas: fireball_atlas.0.clone(),
+                    transform: Transform {
+                        translation: ship_transform.translation,
+                        scale: Vec3::new(0.5, 0.5, 1.0),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                })
+                .insert(Fireball)
+                .insert(FireballAnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)));
+
+                // Additional collision logic can be added here, such as reversing direction
+            }
         }
     }
 }
