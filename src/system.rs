@@ -363,6 +363,7 @@ pub fn shoot_laser(
     }
 }
 
+
 // System to check if the ship has reached the end point
 pub fn check_end_point_reached(
     mut commands: Commands,
@@ -375,22 +376,23 @@ pub fn check_end_point_reached(
         if let Ok(end_point_transform) = end_point_query.get_single() {
             let collision_distance = 30.0;
             if ship_transform.translation.distance(end_point_transform.translation) < collision_distance {
-                println!("Ship reached the end point!");
+                // Despawn the ship and stop the game timer
                 commands.entity(ship_entity).despawn();
-                timer.1 = true;
+                timer.1 = true; // Stop the timer
 
+                // Display the "Level 01 Complete" message on the app screen
                 commands.spawn(TextBundle {
                     text: Text::from_section(
-                        "Level Complete",
+                        "Level 01 Complete", // Message displayed on the app screen
                         TextStyle {
-                            font: asset_server.load("FiraSans-Bold.ttf"),
+                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                             font_size: 50.0,
                             color: Color::GREEN,
-                        }
+                        },
                     ),
                     style: Style {
                         position_type: PositionType::Absolute,
-                        top: Val::Px(100.0),
+                        top: Val::Px(300.0), // Adjust the position on the screen
                         left: Val::Px(200.0),
                         ..Default::default()
                     },
