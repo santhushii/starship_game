@@ -26,13 +26,13 @@ pub struct EndPoint;
 
 // Game timer resource
 #[derive(Resource, Component)]
-pub struct GameTimer(pub Option<f32>, pub bool);
+pub struct GameTimer(pub Option<f32>, pub bool); // Option<f32> for elapsed time, bool to stop the timer
 
 // Starship lives resource
 #[derive(Resource, Component)]
 pub struct ShipLives(pub u32);
 
-// **Laser component** with an enum to distinguish between two laser types
+// Laser component with an enum to distinguish between two laser types
 #[derive(Component)]
 pub struct Laser {
     pub laser_type: LaserType,

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::component::{BoxEntity, EndPoint, GameTimer, Laser, LaserType, Ship, ShipLives, StartPoint};
+use crate::component::{EndPoint, GameTimer, Laser, LaserType, Ship, StartPoint};
 
 // Add a resource to track which laser type to shoot
 #[derive(Resource, Default)]
@@ -136,12 +136,10 @@ pub fn check_end_point_reached(
                     ),
                     style: Style {
                         position_type: PositionType::Absolute,
-                        position: UiRect {
-                            top: Val::Px(100.0),
-                            right: Val::Px(20.0),
-                            ..Default::default()
-                        },
-                        ..Default::default()
+top: Val::Px(250.0),
+left: Val::Px(200.0),
+..Default::default()
+
                     },
                     ..Default::default()
                 });
