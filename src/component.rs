@@ -38,9 +38,11 @@ pub struct Laser {
     pub laser_type: LaserType,
 }
 
+// Enum for different types of lasers
+#[derive(Component)]
 pub enum LaserType {
-    A, // Corresponds to `laser_a_01.png`
-    B, // Corresponds to `laser_b_01.png`
+    A, // Corresponds to laser type A
+    B, // Corresponds to laser type B
 }
 
 // Fireball sprite atlas for explosion
@@ -50,3 +52,10 @@ pub struct FireballAtlas(pub Handle<TextureAtlas>);
 // Fireball animation timer
 #[derive(Component)]
 pub struct FireballAnimationTimer(pub Timer);
+
+// Marker component for lives text
+#[derive(Component)]
+pub struct LivesText;
+
+#[derive(Component)]
+pub struct ShipLivesDisplay;

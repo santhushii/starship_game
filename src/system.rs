@@ -4,6 +4,12 @@ use crate::component::{
     Fireball, FireballAnimationTimer, ShipLives, FireballAtlas
 };
 use rand::Rng;
+use crate::component::LaserType;
+
+// Marker component for the text displaying lives and timer
+#[derive(Component)]
+pub struct ShipLivesDisplay;
+
 // System to set up initial entities
 pub fn setup(
     mut commands: Commands,
@@ -32,7 +38,7 @@ pub fn setup(
     })
     .insert(StartPoint);
 
-    // Spawn ship
+    // Spawn ship with 5 lives
     commands.spawn(SpriteBundle {
         texture: ship_handle.clone(),
         transform: Transform {
@@ -43,7 +49,8 @@ pub fn setup(
         },
         ..Default::default()
     })
-    .insert(Ship);
+    .insert(Ship)
+    .insert(ShipLives(5)); // Initialize with 5 lives
 
     // Spawn end point
     commands.spawn(SpriteBundle {
@@ -59,6 +66,28 @@ pub fn setup(
         ..Default::default()
     })
     .insert(EndPoint);
+
+    // Display ship lives and timer
+    commands.spawn(TextBundle {
+        text: Text::from_section(
+            "Lives: 5\nTime: 0.00 seconds",
+            TextStyle {
+                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                font_size: 30.0,
+                color: Color::WHITE,
+            },
+        ),
+        
+        
+        style: Style {
+            position_type: PositionType::Absolute,
+            top: Val::Px(10.0),
+            left: Val::Px(10.0),
+            ..Default::default()
+        },
+        ..Default::default()
+    })
+    .insert(ShipLivesDisplay);
 
     // Spawn boxes
     for _ in 0..10 {
@@ -85,28 +114,9 @@ pub fn setup(
     let fireball_atlas = TextureAtlas::from_grid(fireball_texture_handle, Vec2::new(64.0, 64.0), 4, 4, None, None);
     let fireball_atlas_handle = texture_atlases.add(fireball_atlas);
     commands.insert_resource(FireballAtlas(fireball_atlas_handle));
-
-    // Add a timer display text entity
-    commands.spawn(TextBundle {
-        text: Text::from_section(
-            "Time: 0.00 seconds",
-            TextStyle {
-                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                font_size: 30.0,
-                color: Color::WHITE,
-            },
-        ),
-        style: Style {
-            position_type: PositionType::Absolute,
-            top: Val::Px(10.0),
-            left: Val::Px(10.0),
-            ..Default::default()
-        },
-        ..Default::default()
-    });
 }
 
-// System to handle box movement (no ship interaction)
+// System to handle box movement
 pub fn box_movement(
     time: Res<Time>,
     mut box_query: Query<(&mut Transform, &BoxDirection), With<BoxEntity>>,
@@ -125,6 +135,7 @@ pub fn box_movement(
         }
     }
 }
+
 // System to handle box and ship collision, and spawn fireballs when they collide
 pub fn box_ship_collision(
     mut commands: Commands,
@@ -134,7 +145,7 @@ pub fn box_ship_collision(
 ) {
     if let Ok(ship_transform) = ship_query.get_single() {
         for box_transform in box_query.iter() {
-            let collision_distance = 30.0; // Adjust this value to match the size of the box and ship
+            let collision_distance = 30.0;
             if box_transform.translation.distance(ship_transform.translation) < collision_distance {
                 // Release fireball when a box collides with the ship
                 commands.spawn(SpriteSheetBundle {
@@ -148,8 +159,6 @@ pub fn box_ship_collision(
                 })
                 .insert(Fireball)
                 .insert(FireballAnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)));
-
-                // Additional collision logic can be added here, such as reversing direction
             }
         }
     }
@@ -227,7 +236,6 @@ pub fn update_timer_display(
     }
 }
 
-
 // System to detect starship-box collisions
 pub fn detect_starship_box_collision(
     mut commands: Commands,
@@ -235,13 +243,12 @@ pub fn detect_starship_box_collision(
     box_query: Query<&Transform, With<BoxEntity>>,
     fireball_atlas: Res<FireballAtlas>,
     asset_server: Res<AssetServer>,
+    mut lives_display_query: Query<&mut Text, With<ShipLivesDisplay>>, // Display for lives and timer
 ) {
-    // Check if the ship exists and handle ship logic
     if let Ok((ship_entity, ship_transform, mut lives)) = ship_query.get_single_mut() {
         let ship_position = ship_transform.translation;
-
-        // Now we handle the box collision logic in a separate query
         let mut collided = false;
+
         for box_transform in box_query.iter() {
             let collision_distance = 30.0;
             if ship_position.distance(box_transform.translation) < collision_distance {
@@ -267,18 +274,17 @@ pub fn detect_starship_box_collision(
         if collided {
             // Reduce ship lives
             lives.0 -= 1;
-            println!("Lives remaining: {}", lives.0);
 
-            // If no lives left, despawn the ship and display game over message
-            if lives.0 == 0 {
-                println!("Game Over!");
-                commands.entity(ship_entity).despawn();
-
+            // Update lives display
+            if let Ok(mut lives_text) = lives_display_query.get_single_mut() {
+                lives_text.sections[0].value = format!("Lives: {}\nTime: 0.00 seconds", lives.0);
+            }
+            if lives.0 <= 0 {
                 commands.spawn(TextBundle {
                     text: Text::from_section(
-                        "Game Over",
+                        "Game Over!",
                         TextStyle {
-                            font: asset_server.load("FiraSans-Bold.ttf"),
+                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                             font_size: 50.0,
                             color: Color::RED,
                         },
@@ -291,13 +297,55 @@ pub fn detect_starship_box_collision(
                     },
                     ..Default::default()
                 });
-            } else {
-                // Reset ship's position to start point if lives remain
-                commands.entity(ship_entity).insert(Transform {
-                    translation: Vec3::new(-400.0, 300.0, 0.0),
-                    ..Default::default()
-                });
             }
+            
+
+            // Despawn the ship after collision
+            commands.entity(ship_entity).despawn();
+
+            // Respawn the ship at the start point after a short delay
+            let start_point_position = Vec3::new(-400.0, 300.0, 0.0);
+            commands.spawn(SpriteBundle {
+                texture: asset_server.load("ship.png"),
+                transform: Transform {
+                    translation: start_point_position,
+                    scale: Vec3::new(0.1, 0.1, 1.0), // Consistent size for respawned ship
+                    rotation: Quat::from_rotation_z(0.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+            .insert(Ship)
+            .insert(ShipLives(lives.0));
+            
+        }
+    }
+}
+// System to handle shooting lasers from the starship's tip
+pub fn shoot_laser(
+    mut commands: Commands,
+    keyboard_input: Res<Input<KeyCode>>,
+    ship_query: Query<&Transform, With<Ship>>,
+    asset_server: Res<AssetServer>,
+) {
+    if keyboard_input.just_pressed(KeyCode::Space) {
+        if let Ok(ship_transform) = ship_query.get_single() {
+            // Calculate the position at the tip of the starship using its rotation
+            let laser_offset = ship_transform.rotation * Vec3::new(0.0, 50.0, 0.0);
+            let laser_position = ship_transform.translation + laser_offset;
+
+            // Spawn the laser at the calculated position with the same rotation as the ship
+            commands.spawn(SpriteBundle {
+                texture: asset_server.load("laser.png"),
+                transform: Transform {
+                    translation: laser_position,
+                    rotation: ship_transform.rotation,
+                    scale: Vec3::new(0.1, 0.1, 1.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+            .insert(Laser { laser_type: LaserType::A });
         }
     }
 }
