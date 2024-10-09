@@ -116,25 +116,30 @@ pub fn setup(
     commands.insert_resource(FireballAtlas(fireball_atlas_handle));
 }
 
-// System to handle box movement
+// System to handle box movement and stop movement when the game ends
 pub fn box_movement(
     time: Res<Time>,
     mut box_query: Query<(&mut Transform, &BoxDirection), With<BoxEntity>>,
+    game_timer: Res<GameTimer>, // Check the game state using the GameTimer resource
 ) {
-    let speed = 100.0;
+    // If the game is not stopped, allow the boxes to move
+    if !game_timer.1 {
+        let speed = 100.0;
 
-    for (mut box_transform, direction) in box_query.iter_mut() {
-        box_transform.translation += direction.0 * speed * time.delta_seconds();
+        for (mut box_transform, direction) in box_query.iter_mut() {
+            box_transform.translation += direction.0 * speed * time.delta_seconds();
 
-        // Wrap around screen edges
-        if box_transform.translation.x > 400.0 || box_transform.translation.x < -400.0 {
-            box_transform.translation.x = -box_transform.translation.x;
-        }
-        if box_transform.translation.y > 300.0 || box_transform.translation.y < -300.0 {
-            box_transform.translation.y = -box_transform.translation.y;
+            // Wrap around screen edges to prevent blinking
+            if box_transform.translation.x > 400.0 || box_transform.translation.x < -400.0 {
+                box_transform.translation.x = -box_transform.translation.x;
+            }
+            if box_transform.translation.y > 300.0 || box_transform.translation.y < -300.0 {
+                box_transform.translation.y = -box_transform.translation.y;
+            }
         }
     }
 }
+
 
 // System to handle box and ship collision, and spawn fireballs when they collide
 pub fn box_ship_collision(
