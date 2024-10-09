@@ -221,22 +221,24 @@ pub fn animate_fireball(
 pub fn update_timer_display(
     time: Res<Time>,
     mut timer: ResMut<GameTimer>,
-    mut query: Query<&mut Text>,
+    mut lives_display_query: Query<&mut Text, With<ShipLivesDisplay>>, // Ensure lives and timer are displayed together
 ) {
-    let is_stopped = timer.1;
-    if let Some(ref mut elapsed_time) = timer.0 {
-        if !is_stopped {
+    // Update the elapsed time only if the timer is not stopped
+    if !timer.1 {
+        if let Some(ref mut elapsed_time) = timer.0 {
             *elapsed_time += time.delta_seconds();
-        }
 
-        // Update the text entity with the elapsed time
-        for mut text in query.iter_mut() {
-            text.sections[0].value = format!("Time: {:.2} seconds", *elapsed_time);
+            // Update the lives and timer display
+            for mut text in lives_display_query.iter_mut() {
+                let lives_text = text.sections[0].value.split('\n').next().unwrap_or("Lives: 0").to_string();
+                text.sections[0].value = format!("{}\nTime: {:.2} seconds", lives_text, *elapsed_time);
+            }
         }
     }
 }
 
-// System to detect starship-box collisions
+
+// System to detect starship-box collisions and handle game logic
 pub fn detect_starship_box_collision(
     mut commands: Commands,
     mut ship_query: Query<(Entity, &Transform, &mut ShipLives), With<Ship>>,
@@ -244,6 +246,7 @@ pub fn detect_starship_box_collision(
     fireball_atlas: Res<FireballAtlas>,
     asset_server: Res<AssetServer>,
     mut lives_display_query: Query<&mut Text, With<ShipLivesDisplay>>, // Display for lives and timer
+    mut game_timer: ResMut<GameTimer>, // Access to the game timer
 ) {
     if let Ok((ship_entity, ship_transform, mut lives)) = ship_query.get_single_mut() {
         let ship_position = ship_transform.translation;
@@ -279,6 +282,8 @@ pub fn detect_starship_box_collision(
             if let Ok(mut lives_text) = lives_display_query.get_single_mut() {
                 lives_text.sections[0].value = format!("Lives: {}\nTime: 0.00 seconds", lives.0);
             }
+
+            // Check if lives are zero to end the game
             if lives.0 <= 0 {
                 commands.spawn(TextBundle {
                     text: Text::from_section(
@@ -297,30 +302,33 @@ pub fn detect_starship_box_collision(
                     },
                     ..Default::default()
                 });
-            }
-            
 
-            // Despawn the ship after collision
+                // Stop the game timer
+                game_timer.1 = true; // Set the timer's boolean to stop tracking time
+            }
+
+            // Despawn the ship after collision and respawn if there are lives left
             commands.entity(ship_entity).despawn();
 
-            // Respawn the ship at the start point after a short delay
-            let start_point_position = Vec3::new(-400.0, 300.0, 0.0);
-            commands.spawn(SpriteBundle {
-                texture: asset_server.load("ship.png"),
-                transform: Transform {
-                    translation: start_point_position,
-                    scale: Vec3::new(0.1, 0.1, 1.0), // Consistent size for respawned ship
-                    rotation: Quat::from_rotation_z(0.0),
+            if lives.0 > 0 {
+                let start_point_position = Vec3::new(-400.0, 300.0, 0.0);
+                commands.spawn(SpriteBundle {
+                    texture: asset_server.load("ship.png"),
+                    transform: Transform {
+                        translation: start_point_position,
+                        scale: Vec3::new(0.1, 0.1, 1.0), // Consistent size for respawned ship
+                        rotation: Quat::from_rotation_z(0.0),
+                        ..Default::default()
+                    },
                     ..Default::default()
-                },
-                ..Default::default()
-            })
-            .insert(Ship)
-            .insert(ShipLives(lives.0));
-            
+                })
+                .insert(Ship)
+                .insert(ShipLives(lives.0));
+            }
         }
     }
 }
+
 // System to handle shooting lasers from the starship's tip
 pub fn shoot_laser(
     mut commands: Commands,
