@@ -1,3 +1,4 @@
+// component.rs
 use bevy::prelude::*;
 
 // Starship component
