@@ -1,21 +1,16 @@
+// system.rs
 use bevy::prelude::*;
 use crate::component::{
     BoxDirection, BoxEntity, EndPoint, GameTimer, Laser, Ship, StartPoint,
-    Fireball, FireballAnimationTimer, ShipLives, FireballAtlas
+    Fireball, FireballAnimationTimer, ShipLives, FireballAtlas, Score, ScoreDisplay,
 };
 use rand::Rng;
-use crate::component::LaserType;
-
-use crate::component::{Score, ScoreDisplay};
 use bevy::ecs::system::ParamSet;
-
-use bevy::window::Window;
-use crate::input::LaserTypeTracker;
-
 
 // Marker component for the text displaying lives and timer
 #[derive(Component)]
 pub struct ShipLivesDisplay;
+
 // System to set up initial entities
 pub fn setup(
     mut commands: Commands,
@@ -167,7 +162,6 @@ pub fn box_movement(
     }
 }
 
-
 // System to handle box and ship collision, and spawn fireballs when they collide
 pub fn box_ship_collision(
     mut commands: Commands,
@@ -214,6 +208,7 @@ pub fn move_laser(
         }
     }
 }
+
 // System to detect laser and box collision and update score accordingly
 pub fn detect_laser_collision(
     mut commands: Commands,
@@ -384,34 +379,6 @@ pub fn detect_starship_box_collision(
     }
 }
 
-// System to handle shooting lasers from the starship's tip
-pub fn shoot_laser(
-    mut commands: Commands,
-    keyboard_input: Res<Input<KeyCode>>,
-    ship_query: Query<&Transform, With<Ship>>,
-    asset_server: Res<AssetServer>,
-) {
-    if keyboard_input.just_pressed(KeyCode::Space) {
-        if let Ok(ship_transform) = ship_query.get_single() {
-            // Calculate the laser's firing direction based on the ship's rotation
-            let laser_direction = ship_transform.rotation * Vec3::Y; // Forward direction of the ship
-            let laser_position = ship_transform.translation + laser_direction * 30.0; // Spawn laser at the tip of the ship
-
-            // Spawn the laser with the correct position and direction
-            commands.spawn(SpriteBundle {
-                texture: asset_server.load("laser.png"),
-                transform: Transform {
-                    translation: laser_position,
-                    rotation: ship_transform.rotation, // Align the laser's rotation with the ship's rotation
-                    scale: Vec3::new(0.1, 0.1, 1.0),
-                    ..Default::default()
-                },
-                ..Default::default()
-            })
-            .insert(Laser { laser_type: LaserType::A });
-        }
-    }
-}
 // System to check if the ship has reached the end point
 pub fn check_end_point_reached(
     mut commands: Commands,
