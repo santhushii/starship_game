@@ -34,7 +34,8 @@ pub struct ShipLives(pub u32);
 
 #[derive(Component)]
 pub struct Laser {
-    pub laser_type: LaserType,
+    #[allow(dead_code)]
+    pub laser_type: LaserType, // Suppress warning if not currently used
 }
 
 // Enum for different types of lasers
@@ -52,16 +53,18 @@ pub struct FireballAtlas(pub Handle<TextureAtlas>);
 #[derive(Component)]
 pub struct FireballAnimationTimer(pub Timer);
 
-// Marker component for lives text
+// Marker component for lives text (suppress warning if unused)
+#[allow(dead_code)]
 #[derive(Component)]
 pub struct LivesText;
 
+#[allow(dead_code)]
 #[derive(Component)]
 pub struct ShipLivesDisplay;
+
 #[derive(Component)]
 pub struct ScoreDisplay;
 
 // Component to track the player's score
 #[derive(Default, Resource)]
 pub struct Score(pub i32);
-

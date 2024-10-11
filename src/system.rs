@@ -202,14 +202,14 @@ pub fn move_laser(
     mut commands: Commands,
     mut laser_query: Query<(Entity, &mut Transform), With<Laser>>,
 ) {
-    let laser_speed = 300.0;
+    let laser_speed = 500.0; // Adjust the speed of the laser
     for (laser_entity, mut transform) in laser_query.iter_mut() {
-        // Calculate the movement direction of the laser based on its rotation
-        let direction = transform.rotation * Vec3::Y; // Move in the direction the laser is facing
-        transform.translation += direction * laser_speed * time.delta_seconds();
+        // Move the laser in the direction it was facing when it was spawned
+        let laser_direction = transform.rotation * Vec3::Y; // Move based on its current rotation
+        transform.translation += laser_direction * laser_speed * time.delta_seconds();
 
-        // Despawn the laser if it goes off-screen to prevent memory leaks
-        if transform.translation.y > 600.0 || transform.translation.y < -600.0 || transform.translation.x > 800.0 || transform.translation.x < -800.0 {
+        // Despawn the laser if it goes off-screen
+        if transform.translation.y > 800.0 || transform.translation.y < -800.0 || transform.translation.x > 1200.0 || transform.translation.x < -1200.0 {
             commands.entity(laser_entity).despawn();
         }
     }
@@ -393,11 +393,11 @@ pub fn shoot_laser(
 ) {
     if keyboard_input.just_pressed(KeyCode::Space) {
         if let Ok(ship_transform) = ship_query.get_single() {
-            // Calculate the direction in which the laser should move, based on the ship's rotation
-            let laser_direction = ship_transform.rotation * Vec3::Y; // Using the rotation to determine direction
-            let laser_position = ship_transform.translation + laser_direction * 20.0; // Spawn offset to avoid the ship itself
+            // Calculate the laser's firing direction based on the ship's rotation
+            let laser_direction = ship_transform.rotation * Vec3::Y; // Forward direction of the ship
+            let laser_position = ship_transform.translation + laser_direction * 30.0; // Spawn laser at the tip of the ship
 
-            // Spawn the laser at the calculated position with the correct rotation and direction
+            // Spawn the laser with the correct position and direction
             commands.spawn(SpriteBundle {
                 texture: asset_server.load("laser.png"),
                 transform: Transform {

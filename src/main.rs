@@ -4,7 +4,7 @@ use system::{
     animate_fireball, box_movement, box_ship_collision, check_end_point_reached,
     detect_laser_collision, detect_starship_box_collision, move_laser, setup, update_timer_display,
 };
-use input::{LaserTypeTracker, ship_movement, rotate_ship_follow_cursor, shoot_laser};
+use input::{LaserTypeTracker, ship_movement, rotate_ship_follow_cursor, shoot_laser, rotate_ship_on_click};
 
 mod component;
 mod system;
@@ -20,7 +20,7 @@ fn main() {
         .insert_resource(component::ShipLives(5)) // Initialize with 5 ship lives
 
         // Use the recommended way to add startup systems
-        .add_systems(Startup, setup) // Setup the initial game state
+        .add_startup_system(setup) // Setup the initial game state
 
         // Add update systems using the new syntax
         .add_systems(
@@ -30,6 +30,7 @@ fn main() {
                 box_ship_collision,            // Detects and processes collisions between the ship and boxes
                 ship_movement,                 // Handles ship movement based on user input
                 rotate_ship_follow_cursor,     // Rotates the ship to follow the mouse cursor
+                rotate_ship_on_click,          // Rotates the ship based on mouse click (added to avoid dead code)
                 shoot_laser,                   // Handles shooting lasers from the ship
                 move_laser,                    // Moves the laser in its direction
                 detect_laser_collision,        // Detects laser and box collisions

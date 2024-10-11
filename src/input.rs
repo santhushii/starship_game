@@ -157,15 +157,15 @@ pub fn rotate_ship_follow_cursor(
         if let Some(window) = windows.get_single().ok() {
             if let Some(cursor_position) = window.cursor_position() {
                 // Get the ship's current position on the 2D plane
-                let ship_position = transform.translation.truncate(); // Convert to Vec2 for 2D calculations
-                
+                let ship_position = transform.translation.truncate(); // Convert Vec3 to Vec2 for calculations
+
                 // Calculate the direction vector from the ship to the cursor
                 let direction = cursor_position - ship_position;
 
-                // Compute the angle between the direction and the x-axis
+                // Compute the angle the ship should rotate to face the cursor
                 let angle = direction.y.atan2(direction.x);
 
-                // Rotate the ship to face the cursor smoothly
+                // Rotate the ship to face the cursor using the calculated angle
                 transform.rotation = Quat::from_rotation_z(angle);
             }
         }
