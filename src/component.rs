@@ -32,7 +32,6 @@ pub struct GameTimer(pub Option<f32>, pub bool); // Option<f32> for elapsed time
 #[derive(Resource, Component)]
 pub struct ShipLives(pub u32);
 
-// Laser component with an enum to distinguish between two laser types
 #[derive(Component)]
 pub struct Laser {
     pub laser_type: LaserType,
@@ -65,3 +64,4 @@ pub struct ScoreDisplay;
 // Component to track the player's score
 #[derive(Default, Resource)]
 pub struct Score(pub i32);
+

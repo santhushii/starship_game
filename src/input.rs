@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 use crate::component::{EndPoint, GameTimer, Laser, LaserType, Ship, StartPoint};
+// Replace `Windows` with `Window` in the import statements
+use bevy::window::Window;
 
 // Add a resource to track which laser type to shoot
 #[derive(Resource, Default)]
@@ -143,6 +145,28 @@ left: Val::Px(200.0),
                     },
                     ..Default::default()
                 });
+            }
+        }
+    }
+}
+pub fn rotate_ship_follow_cursor(
+    windows: Query<&Window>,
+    mut ship_query: Query<&mut Transform, With<Ship>>,
+) {
+    if let Ok(mut transform) = ship_query.get_single_mut() {
+        if let Some(window) = windows.get_single().ok() {
+            if let Some(cursor_position) = window.cursor_position() {
+                // Get the ship's current position on the 2D plane
+                let ship_position = transform.translation.truncate(); // Convert to Vec2 for 2D calculations
+                
+                // Calculate the direction vector from the ship to the cursor
+                let direction = cursor_position - ship_position;
+
+                // Compute the angle between the direction and the x-axis
+                let angle = direction.y.atan2(direction.x);
+
+                // Rotate the ship to face the cursor smoothly
+                transform.rotation = Quat::from_rotation_z(angle);
             }
         }
     }

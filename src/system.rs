@@ -9,6 +9,10 @@ use crate::component::LaserType;
 use crate::component::{Score, ScoreDisplay};
 use bevy::ecs::system::ParamSet;
 
+use bevy::window::Window;
+use crate::input::LaserTypeTracker;
+
+
 // Marker component for the text displaying lives and timer
 #[derive(Component)]
 pub struct ShipLivesDisplay;
@@ -200,15 +204,16 @@ pub fn move_laser(
 ) {
     let laser_speed = 300.0;
     for (laser_entity, mut transform) in laser_query.iter_mut() {
-        transform.translation.y += laser_speed * time.delta_seconds();
+        // Calculate the movement direction of the laser based on its rotation
+        let direction = transform.rotation * Vec3::Y; // Move in the direction the laser is facing
+        transform.translation += direction * laser_speed * time.delta_seconds();
 
-        // Despawn lasers that go off-screen
-        if transform.translation.y > 400.0 {
+        // Despawn the laser if it goes off-screen to prevent memory leaks
+        if transform.translation.y > 600.0 || transform.translation.y < -600.0 || transform.translation.x > 800.0 || transform.translation.x < -800.0 {
             commands.entity(laser_entity).despawn();
         }
     }
 }
-
 // System to detect laser and box collision and update score accordingly
 pub fn detect_laser_collision(
     mut commands: Commands,
@@ -388,16 +393,16 @@ pub fn shoot_laser(
 ) {
     if keyboard_input.just_pressed(KeyCode::Space) {
         if let Ok(ship_transform) = ship_query.get_single() {
-            // Calculate the position at the tip of the starship using its rotation
-            let laser_offset = ship_transform.rotation * Vec3::new(0.0, 50.0, 0.0);
-            let laser_position = ship_transform.translation + laser_offset;
+            // Calculate the direction in which the laser should move, based on the ship's rotation
+            let laser_direction = ship_transform.rotation * Vec3::Y; // Using the rotation to determine direction
+            let laser_position = ship_transform.translation + laser_direction * 20.0; // Spawn offset to avoid the ship itself
 
-            // Spawn the laser at the calculated position with the same rotation as the ship
+            // Spawn the laser at the calculated position with the correct rotation and direction
             commands.spawn(SpriteBundle {
                 texture: asset_server.load("laser.png"),
                 transform: Transform {
                     translation: laser_position,
-                    rotation: ship_transform.rotation,
+                    rotation: ship_transform.rotation, // Align the laser's rotation with the ship's rotation
                     scale: Vec3::new(0.1, 0.1, 1.0),
                     ..Default::default()
                 },
@@ -407,8 +412,6 @@ pub fn shoot_laser(
         }
     }
 }
-
-
 // System to check if the ship has reached the end point
 pub fn check_end_point_reached(
     mut commands: Commands,
