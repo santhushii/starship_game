@@ -1,4 +1,4 @@
-// main.rs
+
 use bevy::prelude::*;
 use system::{
     animate_fireball, box_movement, box_ship_collision, check_end_point_reached,

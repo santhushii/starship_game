@@ -1,3 +1,4 @@
+// input.rs
 use bevy::prelude::*;
 use crate::component::{EndPoint, GameTimer, Laser, LaserType, Ship, StartPoint};
 // Replace `Windows` with `Window` in the import statements
@@ -58,7 +59,7 @@ pub fn ship_movement(
     }
 }
 
-// **2. Rotate ship based on mouse click:**
+// 2. **Rotate Ship Based on Mouse Click:**
 pub fn rotate_ship_on_click(
     mut ship_query: Query<&mut Transform, With<Ship>>,
     mouse_button_input: Res<Input<MouseButton>>,
@@ -73,7 +74,7 @@ pub fn rotate_ship_on_click(
     }
 }
 
-// **3. Shooting laser system (Spacebar):**
+// 3. **Shooting Laser System (Spacebar):**
 pub fn shoot_laser(
     mut commands: Commands,
     keyboard_input: Res<Input<KeyCode>>,
@@ -110,7 +111,7 @@ pub fn shoot_laser(
     }
 }
 
-// **4. End Point Check - Game Ends:**
+// 4. **Check End Point Reached - Game Ends:**
 pub fn check_end_point_reached(
     mut commands: Commands,
     mut query: Query<(Entity, &Transform), With<Ship>>,
@@ -138,10 +139,9 @@ pub fn check_end_point_reached(
                     ),
                     style: Style {
                         position_type: PositionType::Absolute,
-top: Val::Px(250.0),
-left: Val::Px(200.0),
-..Default::default()
-
+                        top: Val::Px(250.0),
+                        left: Val::Px(200.0),
+                        ..Default::default()
                     },
                     ..Default::default()
                 });
@@ -149,6 +149,8 @@ left: Val::Px(200.0),
         }
     }
 }
+
+// 5. **Rotate Ship to Follow Cursor:**
 pub fn rotate_ship_follow_cursor(
     windows: Query<&Window>,
     mut ship_query: Query<&mut Transform, With<Ship>>,
