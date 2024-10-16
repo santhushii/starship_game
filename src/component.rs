@@ -69,3 +69,6 @@ pub struct ScoreDisplay;
 // Component to track the player's score
 #[derive(Default, Resource)]
 pub struct Score(pub i32);
+
+#[derive(Component)]
+pub struct LaserMovementTimer(pub Timer);

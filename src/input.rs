@@ -1,6 +1,6 @@
 // input.rs
 use bevy::prelude::*;
-use crate::component::{EndPoint, GameTimer, Laser, LaserType, Ship, StartPoint};
+use crate::component::{EndPoint, GameTimer, Laser, LaserMovementTimer, LaserType, Ship, StartPoint};
 // Replace `Windows` with `Window` in the import statements
 use bevy::window::Window;
 
@@ -75,38 +75,54 @@ pub fn rotate_ship_on_click(
 }
 
 // 3. **Shooting Laser System (Spacebar):**
+
 pub fn shoot_laser(
     mut commands: Commands,
     keyboard_input: Res<Input<KeyCode>>,
-    ship_query: Query<&Transform, With<Ship>>,
-    asset_server: Res<AssetServer>,
-    mut laser_tracker: ResMut<LaserTypeTracker>,
+    ship_query: Query<&Transform, With<Ship>>,  // Query to get the ship's transform
+    asset_server: Res<AssetServer>,             // Asset server to load textures
 ) {
     if keyboard_input.just_pressed(KeyCode::Space) {
+        // Get the ship's position and rotation
         if let Ok(ship_transform) = ship_query.get_single() {
-            // Alternate between laser_a_01.png and laser_b_01.png
-            let laser_texture = if laser_tracker.shoot_a {
-                asset_server.load("laser_a_01.png")
-            } else {
-                asset_server.load("laser_b_01.png")
-            };
-            let laser_position = ship_transform.translation;
+            // Load the appropriate laser texture
+            let laser_texture = asset_server.load("laser_a_01.png");
 
-            commands.spawn(SpriteBundle {
-                texture: laser_texture,
-                transform: Transform {
-                    translation: laser_position,
-                    scale: Vec3::new(0.3, 0.3, 1.0), // Adjusted laser size
+            // Spawn the laser entity with all necessary components
+            commands.spawn((
+                SpriteBundle {
+                    texture: laser_texture,  // Texture for the laser
+                    transform: Transform {
+                        translation: ship_transform.translation,  // Start at the ship's position
+                        rotation: ship_transform.rotation,        // Maintain ship's rotation
+                        ..Default::default()
+                    },
                     ..Default::default()
                 },
-                ..Default::default()
-            })
-            .insert(Laser {
-                laser_type: if laser_tracker.shoot_a { LaserType::A } else { LaserType::B },
-            });
+                Laser {
+                    laser_type: LaserType::A,  // Initialize with laser type A
+                },
+                LaserMovementTimer(Timer::from_seconds(0.05, TimerMode::Repeating)), // Timer for movement updates
+            ));
+        }
+    }
+}
+pub fn move_laser(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut laser_query: Query<(Entity, &mut Transform, &mut LaserMovementTimer), With<Laser>>, // Use &mut LaserMovementTimer
+) {
+    let laser_speed = 500.0;
 
-            // Toggle the laser type for the next shot
-            laser_tracker.shoot_a = !laser_tracker.shoot_a;
+    for (entity, mut transform, mut timer) in laser_query.iter_mut() {
+        if timer.0.tick(time.delta()).finished() {
+            let direction = transform.rotation * Vec3::Y;
+            transform.translation += direction * laser_speed * time.delta_seconds();
+
+            if transform.translation.y > 800.0 || transform.translation.y < -800.0 ||
+               transform.translation.x > 1200.0 || transform.translation.x < -1200.0 {
+                commands.entity(entity).despawn();
+            }
         }
     }
 }
@@ -155,19 +171,11 @@ pub fn rotate_ship_follow_cursor(
     windows: Query<&Window>,
     mut ship_query: Query<&mut Transform, With<Ship>>,
 ) {
-    if let Ok(mut transform) = ship_query.get_single_mut() {
-        if let Some(window) = windows.get_single().ok() {
-            if let Some(cursor_position) = window.cursor_position() {
-                // Get the ship's current position on the 2D plane
-                let ship_position = transform.translation.truncate(); // Convert Vec3 to Vec2 for calculations
-
-                // Calculate the direction vector from the ship to the cursor
-                let direction = cursor_position - ship_position;
-
-                // Compute the angle the ship should rotate to face the cursor
+    if let Ok(window) = windows.get_single() {
+        if let Some(cursor_position) = window.cursor_position() {
+            if let Ok(mut transform) = ship_query.get_single_mut() {
+                let direction = cursor_position - transform.translation.truncate();
                 let angle = direction.y.atan2(direction.x);
-
-                // Rotate the ship to face the cursor using the calculated angle
                 transform.rotation = Quat::from_rotation_z(angle);
             }
         }

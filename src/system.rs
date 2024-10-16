@@ -249,16 +249,18 @@ pub fn animate_fireball(
     mut commands: Commands,
     mut query: Query<(Entity, &mut FireballAnimationTimer, &mut TextureAtlasSprite), With<Fireball>>,
 ) {
-    for (entity, mut animation_timer, mut sprite) in query.iter_mut() {
-        animation_timer.0.tick(time.delta());
-        if animation_timer.0.finished() {
+    for (entity, mut timer, mut sprite) in query.iter_mut() {
+        timer.0.tick(time.delta()); // Use the timer field
+        if timer.0.finished() { // Check if the timer is finished
             sprite.index += 1;
             if sprite.index >= 16 {
                 commands.entity(entity).despawn();
             }
         }
+        
     }
 }
+
 
 // Timer update and display system
 pub fn update_timer_display(
